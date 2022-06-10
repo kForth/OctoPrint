@@ -978,6 +978,7 @@ class Settings:
                     "disable_steppers": "M84",
                     "disable_hotends": "{% snippet 'disable_hotends' %}",
                     "disable_bed": "M140 S0",
+                    "disable_chamber": "M141 S0",
                     "disable_fan": "M106 S0",
                 }
 
