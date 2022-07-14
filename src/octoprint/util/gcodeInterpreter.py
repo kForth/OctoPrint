@@ -700,15 +700,6 @@ class gcode:
                     else:
                         e -= currentE[currentExtruder]
 
-                    # If move with extrusion, calculate new min/max coordinates of model
-                    if e > 0 and move:
-                        # extrusion and move -> oldPos & pos relevant for print area & dimensions
-                        self._minMax.record(oldPos)
-                        self._minMax.record(pos)
-                        spline_length = self._addSplineMinMax(
-                            self._minMax, oldPos, pos, control1, control2
-                        )
-
                     totalExtrusion[currentExtruder] += e
                     currentE[currentExtruder] += e
                     maxExtrusion[currentExtruder] = max(
@@ -724,11 +715,25 @@ class gcode:
                 else:
                     e = 0
 
-                # move time in x, y, z, will be 0 if no movement happened
-                if spline_length is None:
-                    spline_length = self._calcSplineLength(
+                # If move, calculate new min/max coordinates
+                if move:
+                    spline_minMax, spline_length = self._getSplineMinMax(
                         oldPos, pos, control1, control2
                     )
+                    # store as print move if extrusion is > 0
+                    if e > 0:
+                        self._print_minMax.record(oldPos)
+                        self._print_minMax.record(pos)
+                        self._print_minMax.record(spline_minMax.min)
+                        self._print_minMax.record(spline_minMax.max)
+                    self._travel_minMax.record(oldPos)
+                    self._travel_minMax.record(pos)
+                    self._travel_minMax.record(spline_minMax.min)
+                    self._travel_minMax.record(spline_minMax.max)
+                else:
+                    spline_length = 0
+
+                # move time in x, y, z, will be 0 if no movement happened
                 moveTimeXYZ = abs(spline_length / feedrate)
 
                 # time needed for extruding, will be 0 if no extrusion happened
@@ -926,7 +931,7 @@ class gcode:
             # arc crosses negative y
             minmax.min.y = min(minmax.min.y, centerArc.y - radius)
 
-    def _addSplineMinMax(self, minmax, position, target, control1, control2):
+    def _getSplineMinMax(self, position, target, control1, control2):
         # Function adapted from Marlin's G5 planning.
         # https://github.com/MarlinFirmware/Marlin/blob/bugfix-2.1.x/Marlin/src/gcode/motion/G5.cpp
 
@@ -938,6 +943,7 @@ class gcode:
         step = MAX_STEP
         bez_target = Vector3D(position.x, position.y, position.z)
         spline_length = 0
+        minmax = MinMax3D()
 
         def dist(x1, y1, x2, y2):
             return abs(x1 - x2) + abs(y1 - y2)
@@ -1014,17 +1020,7 @@ class gcode:
             # Update min/max
             minmax.record(bez_target)
 
-        return spline_length
-
-    def _calcSplineLength(self, position, target, control1, control2):
-        # Approximate spline length as linear distance between control points
-
-        def dist(pt1, pt2):
-            return abs(pt1.x - pt2.x) + abs(pt1.y - pt2.y)
-
-        return (
-            dist(position, control1) + dist(control1, control2) + dist(control2, target)
-        )
+        return minmax, spline_length
 
     def get_result(self):
         result = {
