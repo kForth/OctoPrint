@@ -57,6 +57,7 @@ GCODE.renderer = (function () {
         showSegmentStarts: false,
         sizeSegmentStart: 2 * pixelRatio,
         showDebugArcs: false,
+        showDebugSplines: false,
         chromeArcFix: false,
 
         moveModel: true,
@@ -1135,7 +1136,7 @@ GCODE.renderer = (function () {
                             spline.y
                         );
 
-                        if (renderOptions["showDebugArcs"] && !isNotCurrentLayer) {
+                        if (renderOptions["showDebugSplines"] && !isNotCurrentLayer) {
                             strokePathIfNeeded("debugspline", "#ee0000");
                             drawDebugSpline(spline);
                             strokePathIfNeeded("extrude", getColorLineForTool(tool));

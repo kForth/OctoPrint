@@ -71,6 +71,7 @@ $(function () {
         self.renderer_showPrinthead = ko.observable(true);
         self.renderer_showSegmentStarts = ko.observable(false);
         self.renderer_showDebugArcs = ko.observable(false);
+        self.renderer_showDebugSplines = ko.observable(false);
         self.renderer_chromeArcFix = ko.observable(OctoPrint.coreui.browser.chrome);
         self.renderer_showBoundingBox = ko.observable(false);
         self.renderer_showLayerBoundingBox = ko.observable(false);
@@ -110,6 +111,7 @@ $(function () {
                 showHead: self.renderer_showPrinthead(),
                 showSegmentStarts: self.renderer_showSegmentStarts(),
                 showDebugArcs: self.renderer_showDebugArcs(),
+                showDebugSplines: self.renderer_showDebugSplines(),
                 chromeArcFix: self.renderer_chromeArcFix(),
                 showBoundingBox: self.renderer_showBoundingBox(),
                 showLayerBoundingBox: self.renderer_showLayerBoundingBox(),
@@ -165,6 +167,7 @@ $(function () {
         self.renderer_showPrinthead.subscribe(self.rendererOptionUpdated);
         self.renderer_showSegmentStarts.subscribe(self.rendererOptionUpdated);
         self.renderer_showDebugArcs.subscribe(self.rendererOptionUpdated);
+        self.renderer_showDebugSplines.subscribe(self.rendererOptionUpdated);
         self.renderer_chromeArcFix.subscribe(self.rendererOptionUpdated);
         self.renderer_showBoundingBox.subscribe(self.rendererOptionUpdated);
         self.renderer_showLayerBoundingBox.subscribe(self.rendererOptionUpdated);
@@ -440,6 +443,7 @@ $(function () {
             self.renderer_showPrinthead(true);
             self.renderer_showSegmentStarts(false);
             self.renderer_showDebugArcs(false);
+            self.renderer_showDebugSplines(false);
             self.renderer_chromeArcFix(OctoPrint.coreui.browser.chrome);
             self.renderer_showBoundingBox(false);
             self.renderer_showLayerBoundingBox(false);
@@ -942,6 +946,7 @@ $(function () {
                 showPrinthead: self.renderer_showPrinthead(),
                 showSegmentStarts: self.renderer_showSegmentStarts(),
                 showDebugArcs: self.renderer_showDebugArcs(),
+                showDebugSplines: self.renderer_showDebugSplines(),
                 chromeArcFix: self.renderer_chromeArcFix(),
                 showPrevious: self.renderer_showPrevious(),
                 showCurrent: self.renderer_showCurrent(),
@@ -971,6 +976,8 @@ $(function () {
                 self.renderer_showSegmentStarts(current["showSegmentStarts"]);
             if (current["showDebugArcs"] !== undefined)
                 self.renderer_showDebugArcs(current["showDebugArcs"]);
+            if (current["showDebugSplines"] !== undefined)
+                self.renderer_showDebugSplines(current["showDebugSplines"]);
             if (current["chromeArcFix"] !== undefined)
                 self.renderer_chromeArcFix(current["chromeArcFix"]);
             if (current["showPrevious"] !== undefined)
