@@ -305,6 +305,19 @@ GCODE.renderer = (function () {
         };
     }
 
+    function getSplineParams(cmd) {
+        return {
+            prevX: cmd.prevX,
+            prevY: cmd.prevY,
+            c1X: cmd.prevX + cmd.i,
+            c1Y: cmd.prevY + cmd.j,
+            c2X: cmd.prevX + cmd.p,
+            c2Y: cmd.prevY + cmd.r,
+            x: cmd.x,
+            y: cmd.y
+        };
+    }
+
     function trackTransforms(ctx) {
         var svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
         var xform = svg.createSVGMatrix();
@@ -865,6 +878,13 @@ GCODE.renderer = (function () {
         ctx.arc(arc.x, arc.y, arc.r, arc.startAngle, arc.endAngle, ccw);
     };
 
+    var drawDebugSpline = function (spline) {
+        ctx.moveTo(spline.prevX, spline.prevY);
+        ctx.lineTo(spline.c1X, spline.c1Y);
+        ctx.lineTo(spline.c2X, spline.c2Y);
+        ctx.lineTo(spline.x, spline.y);
+    };
+
     var drawLayer = function (layerNum, fromProgress, toProgress, isNotCurrentLayer) {
         log.trace(
             "Drawing layer " +
@@ -1084,9 +1104,9 @@ GCODE.renderer = (function () {
                     // no retraction => real extrusion move, use tool color to draw line
                     strokePathIfNeeded("extrude", getColorLineForTool(tool));
                     ctx.lineWidth = renderOptions["extrusionWidth"] * lineWidthFactor;
-                    if (cmd.direction !== undefined && cmd.direction !== 0) {
+                    if (/^(?:G2|G3|G02|G03)$/i.test(cmd.g)) {
                         var arc = getArcParams(cmd);
-                        var ccw = cmd.direction < 0; // Y-axis is inverted so direction is also inverted
+                        var ccw = /G0?2/i.test(cmd.g); // Y-axis is inverted so direction is also inverted
 
                         if (renderOptions["showDebugArcs"] && !isNotCurrentLayer) {
                             strokePathIfNeeded("debugarc", "#ff0000");
@@ -1095,6 +1115,22 @@ GCODE.renderer = (function () {
                         }
 
                         ctx.arc(arc.x, arc.y, arc.r, arc.startAngle, arc.endAngle, ccw);
+                    } else if (/^(?:G5|G05)$/i.test(cmd.g)) {
+                        var spline = getSplineParams(cmd);
+                        ctx.bezierCurveTo(
+                            spline.c1X,
+                            spline.c1Y,
+                            spline.c2X,
+                            spline.c2Y,
+                            spline.x,
+                            spline.x
+                        );
+
+                        if (renderOptions["showDebugArcs"] && !isNotCurrentLayer) {
+                            strokePathIfNeeded("debugspline", "#ee0000");
+                            drawDebugSpline(spline);
+                            strokePathIfNeeded("extrude", getColorLineForTool(tool));
+                        }
                     } else {
                         ctx.lineTo(x, y);
                     }

@@ -348,7 +348,7 @@ var doParse = function () {
     var x,
         y,
         z = 0;
-    var center_i, center_j, direction;
+    var arg_i, arg_j, arg_p, arg_r;
     var prevX = 0,
         prevY = 0,
         prevZ = 0;
@@ -357,6 +357,7 @@ var doParse = function () {
     var extrude = false,
         relativeE = false,
         retract = 0;
+    var g = undefined;
     var relativeMode = false;
     var zLift = false;
     var zLiftZ = undefined;
@@ -384,9 +385,10 @@ var doParse = function () {
         y = undefined;
         z = undefined;
         retract = 0;
-        center_i = undefined;
-        center_j = undefined;
-        direction = undefined;
+        arg_i = undefined;
+        arg_j = undefined;
+        arg_p = undefined;
+        arg_r = undefined;
 
         var line = gcode[i].line;
         var percentage = gcode[i].percentage;
@@ -402,7 +404,7 @@ var doParse = function () {
         var addToModel = false;
         var move = false;
 
-        if (/^(?:G0|G1|G2|G3|G00|G01|G02|G03)(\.\d+)?\s/i.test(line)) {
+        if (/^(?:G0|G1|G2|G3|G5|G00|G01|G02|G03|G05)(\.\d+)?\s/i.test(line)) {
             args = line.split(/\s/);
 
             for (j = 0; j < args.length; j++) {
@@ -474,14 +476,19 @@ var doParse = function () {
                         lastF = numSlice;
                         break;
                     case "i":
-                        center_i = Number(args[j].slice(1));
+                        arg_i = Number(args[j].slice(1));
                         break;
                     case "j":
-                        center_j = Number(args[j].slice(1));
+                        arg_j = Number(args[j].slice(1));
+                        break;
+                    case "p":
+                        arg_p = Number(args[j].slice(1));
+                        break;
+                    case "r":
+                        arg_r = Number(args[j].slice(1));
                         break;
                     case "g":
-                        if (args[j].charAt(1).toLowerCase() === "2") direction = -1;
-                        if (args[j].charAt(1).toLowerCase() === "3") direction = 1;
+                        g = args[j].toLowerCase();
                         break;
                 }
             }
@@ -650,12 +657,14 @@ var doParse = function () {
                 model[layer] = decompress(model[layer]);
 
             var command = {
+                g: g,
                 x: x,
                 y: y,
                 z: z,
-                i: center_i,
-                j: center_j,
-                direction: direction,
+                i: arg_i,
+                j: arg_j,
+                p: arg_p,
+                r: arg_r,
                 extrude: extrude,
                 retract: retract,
                 noMove: !move,
