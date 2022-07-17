@@ -67,12 +67,14 @@ class PrinterInterface:
         """
         import octoprint.util.comm as comm
 
+        c = kwargs.get("config", None)
+
         return {
             "ports": sorted(comm.serialList(), key=natural_key),
             "baudrates": sorted(comm.baudrateList(), reverse=True),
-            "portPreference": settings().get(["serial", "port"]),
-            "baudratePreference": settings().getInt(["serial", "baudrate"]),
-            "autoconnect": settings().getBoolean(["serial", "autoconnect"]),
+            "portPreference": settings().get(["serial", "port"], config=c),
+            "baudratePreference": settings().getInt(["serial", "baudrate"], config=c),
+            "autoconnect": settings().getBoolean(["serial", "autoconnect"], config=c),
         }
 
     def connect(self, port=None, baudrate=None, profile=None, *args, **kwargs):
