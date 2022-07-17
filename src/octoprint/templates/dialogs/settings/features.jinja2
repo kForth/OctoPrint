@@ -68,7 +68,13 @@
     <div class="control-group" title="{{ _('Commands to not completely auto uppercase in the terminal tab')|edq }}">
         <label class="control-label" for="settings-featureAutoUppercaseBlacklist">{{ _('Terminal Auto Uppercase Blacklist') }}</label>
         <div class="controls">
-            <input type="text" class="input-block-level" id="settings-featureAutoUppercaseBlacklist" data-bind="value: feature_autoUppercaseBlacklist">
+            <div class="input-prepend input-append">
+                <div class="btn-group">
+                    <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                    <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-featureAutoUppercaseBlacklist'); }">Reset to Default</a></li></ul>
+                </div>
+                <input type="text" class="input-block-level" id="settings-featureAutoUppercaseBlacklist" data-bind="value: feature_autoUppercaseBlacklist">
+            </div>
             <span class="help-block">{{ _('Use this to specify the commands that should not have their parameters automatically uppercased in the terminal tab. Just the G or M code, comma separated.') }}</span>
         </div>
     </div>

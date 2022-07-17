@@ -11,6 +11,7 @@ from flask_login import current_user
 import octoprint.plugin
 import octoprint.util
 from octoprint.access.permissions import Permissions
+from octoprint.schema.config.scripts import ScriptsConfig
 from octoprint.server import pluginManager, printer, userManager
 from octoprint.server.api import NO_CONTENT, api
 from octoprint.server.util.flask import no_firstrun_access, with_revalidation_checking
@@ -93,177 +94,262 @@ def getSettings():
 
     s = settings()
 
-    connectionOptions = printer.__class__.get_connection_options()
+    data = _get_settings_data_model(s)
+
+    gcode_scripts = s.listScripts("gcode")
+    if gcode_scripts:
+        data["scripts"] = {"gcode": {}}
+        for name in gcode_scripts:
+            data["scripts"]["gcode"][name] = s.loadScript("gcode", name, source=True)
+
+    plugin_settings = _get_plugin_settings()
+    if len(plugin_settings):
+        data["plugins"] = plugin_settings
+
+    return jsonify(data)
+
+
+def _get_settings_data_model(s, c=None):
+
+    connectionOptions = printer.__class__.get_connection_options(config=c)
 
     # NOTE: Remember to adjust the docs of the data model on the Settings API if anything
     # is changed, added or removed here
 
-    data = {
+    return {
         "api": {
-            "key": s.get(["api", "key"]) if Permissions.ADMIN.can() else None,
-            "allowCrossOrigin": s.get(["api", "allowCrossOrigin"]),
+            "key": s.get(["api", "key"], config=c) if Permissions.ADMIN.can() else None,
+            "allowCrossOrigin": s.get(["api", "allowCrossOrigin"], config=c),
         },
         "appearance": {
-            "name": s.get(["appearance", "name"]),
-            "color": s.get(["appearance", "color"]),
-            "colorTransparent": s.getBoolean(["appearance", "colorTransparent"]),
-            "colorIcon": s.getBoolean(["appearance", "colorIcon"]),
-            "defaultLanguage": s.get(["appearance", "defaultLanguage"]),
-            "showFahrenheitAlso": s.getBoolean(["appearance", "showFahrenheitAlso"]),
-            "fuzzyTimes": s.getBoolean(["appearance", "fuzzyTimes"]),
-            "closeModalsWithClick": s.getBoolean(["appearance", "closeModalsWithClick"]),
-            "showInternalFilename": s.getBoolean(["appearance", "showInternalFilename"]),
+            "name": s.get(["appearance", "name"], config=c),
+            "color": s.get(["appearance", "color"], config=c),
+            "colorTransparent": s.getBoolean(
+                ["appearance", "colorTransparent"], config=c
+            ),
+            "colorIcon": s.getBoolean(["appearance", "colorIcon"], config=c),
+            "defaultLanguage": s.get(["appearance", "defaultLanguage"], config=c),
+            "showFahrenheitAlso": s.getBoolean(
+                ["appearance", "showFahrenheitAlso"], config=c
+            ),
+            "fuzzyTimes": s.getBoolean(["appearance", "fuzzyTimes"], config=c),
+            "closeModalsWithClick": s.getBoolean(
+                ["appearance", "closeModalsWithClick"], config=c
+            ),
+            "showInternalFilename": s.getBoolean(
+                ["appearance", "showInternalFilename"], config=c
+            ),
         },
         "webcam": {
-            "webcamEnabled": s.getBoolean(["webcam", "webcamEnabled"]),
-            "timelapseEnabled": s.getBoolean(["webcam", "timelapseEnabled"]),
-            "streamUrl": s.get(["webcam", "stream"]),
-            "streamRatio": s.get(["webcam", "streamRatio"]),
-            "streamTimeout": s.getInt(["webcam", "streamTimeout"]),
-            "streamWebrtcIceServers": s.get(["webcam", "streamWebrtcIceServers"]),
-            "snapshotUrl": s.get(["webcam", "snapshot"]),
-            "snapshotTimeout": s.getInt(["webcam", "snapshotTimeout"]),
-            "snapshotSslValidation": s.getBoolean(["webcam", "snapshotSslValidation"]),
-            "ffmpegPath": s.get(["webcam", "ffmpeg"]),
-            "ffmpegCommandline": s.get(["webcam", "ffmpegCommandline"]),
-            "bitrate": s.get(["webcam", "bitrate"]),
-            "ffmpegThreads": s.get(["webcam", "ffmpegThreads"]),
-            "ffmpegVideoCodec": s.get(["webcam", "ffmpegVideoCodec"]),
-            "watermark": s.getBoolean(["webcam", "watermark"]),
-            "flipH": s.getBoolean(["webcam", "flipH"]),
-            "flipV": s.getBoolean(["webcam", "flipV"]),
-            "rotate90": s.getBoolean(["webcam", "rotate90"]),
-            "cacheBuster": s.getBoolean(["webcam", "cacheBuster"]),
+            "webcamEnabled": s.getBoolean(["webcam", "webcamEnabled"], config=c),
+            "timelapseEnabled": s.getBoolean(["webcam", "timelapseEnabled"], config=c),
+            "streamUrl": s.get(["webcam", "stream"], config=c),
+            "streamRatio": s.get(["webcam", "streamRatio"], config=c),
+            "streamTimeout": s.getInt(["webcam", "streamTimeout"], config=c),
+            "streamWebrtcIceServers": s.get(
+                ["webcam", "streamWebrtcIceServers"], config=c
+            ),
+            "snapshotUrl": s.get(["webcam", "snapshot"], config=c),
+            "snapshotTimeout": s.getInt(["webcam", "snapshotTimeout"], config=c),
+            "snapshotSslValidation": s.getBoolean(
+                ["webcam", "snapshotSslValidation"], config=c
+            ),
+            "ffmpegPath": s.get(["webcam", "ffmpeg"], config=c),
+            "ffmpegCommandline": s.get(["webcam", "ffmpegCommandline"], config=c),
+            "bitrate": s.get(["webcam", "bitrate"], config=c),
+            "ffmpegThreads": s.get(["webcam", "ffmpegThreads"], config=c),
+            "ffmpegVideoCodec": s.get(["webcam", "ffmpegVideoCodec"], config=c),
+            "watermark": s.getBoolean(["webcam", "watermark"], config=c),
+            "flipH": s.getBoolean(["webcam", "flipH"], config=c),
+            "flipV": s.getBoolean(["webcam", "flipV"], config=c),
+            "rotate90": s.getBoolean(["webcam", "rotate90"], config=c),
+            "cacheBuster": s.getBoolean(["webcam", "cacheBuster"], config=c),
         },
         "feature": {
-            "temperatureGraph": s.getBoolean(["feature", "temperatureGraph"]),
-            "sdSupport": s.getBoolean(["feature", "sdSupport"]),
-            "keyboardControl": s.getBoolean(["feature", "keyboardControl"]),
-            "pollWatched": s.getBoolean(["feature", "pollWatched"]),
-            "modelSizeDetection": s.getBoolean(["feature", "modelSizeDetection"]),
-            "rememberFileFolder": s.getBoolean(["feature", "rememberFileFolder"]),
-            "printStartConfirmation": s.getBoolean(["feature", "printStartConfirmation"]),
+            "temperatureGraph": s.getBoolean(["feature", "temperatureGraph"], config=c),
+            "sdSupport": s.getBoolean(["feature", "sdSupport"], config=c),
+            "keyboardControl": s.getBoolean(["feature", "keyboardControl"], config=c),
+            "pollWatched": s.getBoolean(["feature", "pollWatched"], config=c),
+            "modelSizeDetection": s.getBoolean(
+                ["feature", "modelSizeDetection"], config=c
+            ),
+            "rememberFileFolder": s.getBoolean(
+                ["feature", "rememberFileFolder"], config=c
+            ),
+            "printStartConfirmation": s.getBoolean(
+                ["feature", "printStartConfirmation"], config=c
+            ),
             "printCancelConfirmation": s.getBoolean(
-                ["feature", "printCancelConfirmation"]
+                ["feature", "printCancelConfirmation"], config=c
             ),
             "uploadOverwriteConfirmation": s.getBoolean(
-                ["feature", "uploadOverwriteConfirmation"]
+                ["feature", "uploadOverwriteConfirmation"], config=c
             ),
-            "g90InfluencesExtruder": s.getBoolean(["feature", "g90InfluencesExtruder"]),
-            "autoUppercaseBlacklist": s.get(["feature", "autoUppercaseBlacklist"]),
+            "g90InfluencesExtruder": s.getBoolean(
+                ["feature", "g90InfluencesExtruder"], config=c
+            ),
+            "autoUppercaseBlacklist": s.get(
+                ["feature", "autoUppercaseBlacklist"], config=c
+            ),
         },
         "gcodeAnalysis": {
-            "runAt": s.get(["gcodeAnalysis", "runAt"]),
-            "bedZ": s.getFloat(["gcodeAnalysis", "bedZ"]),
+            "runAt": s.get(["gcodeAnalysis", "runAt"], config=c),
+            "bedZ": s.getFloat(["gcodeAnalysis", "bedZ"], config=c),
         },
         "serial": {
             "port": connectionOptions["portPreference"],
             "baudrate": connectionOptions["baudratePreference"],
-            "exclusive": s.getBoolean(["serial", "exclusive"]),
-            "lowLatency": s.getBoolean(["serial", "lowLatency"]),
+            "exclusive": s.getBoolean(["serial", "exclusive"], config=c),
+            "lowLatency": s.getBoolean(["serial", "lowLatency"], config=c),
             "portOptions": connectionOptions["ports"],
             "baudrateOptions": connectionOptions["baudrates"],
-            "autoconnect": s.getBoolean(["serial", "autoconnect"]),
-            "timeoutConnection": s.getFloat(["serial", "timeout", "connection"]),
-            "timeoutDetectionFirst": s.getFloat(["serial", "timeout", "detectionFirst"]),
+            "autoconnect": s.getBoolean(["serial", "autoconnect"], config=c),
+            "timeoutConnection": s.getFloat(
+                ["serial", "timeout", "connection"], config=c
+            ),
+            "timeoutDetectionFirst": s.getFloat(
+                ["serial", "timeout", "detectionFirst"], config=c
+            ),
             "timeoutDetectionConsecutive": s.getFloat(
-                ["serial", "timeout", "detectionConsecutive"]
+                ["serial", "timeout", "detectionConsecutive"], config=c
             ),
-            "timeoutCommunication": s.getFloat(["serial", "timeout", "communication"]),
+            "timeoutCommunication": s.getFloat(
+                ["serial", "timeout", "communication"], config=c
+            ),
             "timeoutCommunicationBusy": s.getFloat(
-                ["serial", "timeout", "communicationBusy"]
+                ["serial", "timeout", "communicationBusy"], config=c
             ),
-            "timeoutTemperature": s.getFloat(["serial", "timeout", "temperature"]),
+            "timeoutTemperature": s.getFloat(
+                ["serial", "timeout", "temperature"], config=c
+            ),
             "timeoutTemperatureTargetSet": s.getFloat(
-                ["serial", "timeout", "temperatureTargetSet"]
+                ["serial", "timeout", "temperatureTargetSet"], config=c
             ),
             "timeoutTemperatureAutoreport": s.getFloat(
-                ["serial", "timeout", "temperatureAutoreport"]
+                ["serial", "timeout", "temperatureAutoreport"], config=c
             ),
-            "timeoutSdStatus": s.getFloat(["serial", "timeout", "sdStatus"]),
+            "timeoutSdStatus": s.getFloat(["serial", "timeout", "sdStatus"], config=c),
             "timeoutSdStatusAutoreport": s.getFloat(
-                ["serial", "timeout", "sdStatusAutoreport"]
+                ["serial", "timeout", "sdStatusAutoreport"], config=c
             ),
-            "timeoutPosAutoreport": s.getFloat(["serial", "timeout", "posAutoreport"]),
+            "timeoutPosAutoreport": s.getFloat(
+                ["serial", "timeout", "posAutoreport"], config=c
+            ),
             "timeoutBaudrateDetectionPause": s.getFloat(
-                ["serial", "timeout", "baudrateDetectionPause"]
+                ["serial", "timeout", "baudrateDetectionPause"], config=c
             ),
             "timeoutPositionLogWait": s.getFloat(
-                ["serial", "timeout", "positionLogWait"]
+                ["serial", "timeout", "positionLogWait"], config=c
             ),
-            "log": s.getBoolean(["serial", "log"]),
-            "additionalPorts": s.get(["serial", "additionalPorts"]),
-            "additionalBaudrates": s.get(["serial", "additionalBaudrates"]),
-            "blacklistedPorts": s.get(["serial", "blacklistedPorts"]),
-            "blacklistedBaudrates": s.get(["serial", "blacklistedBaudrates"]),
-            "longRunningCommands": s.get(["serial", "longRunningCommands"]),
-            "checksumRequiringCommands": s.get(["serial", "checksumRequiringCommands"]),
-            "blockedCommands": s.get(["serial", "blockedCommands"]),
-            "ignoredCommands": s.get(["serial", "ignoredCommands"]),
-            "pausingCommands": s.get(["serial", "pausingCommands"]),
-            "sdCancelCommand": s.get(["serial", "sdCancelCommand"]),
-            "emergencyCommands": s.get(["serial", "emergencyCommands"]),
-            "helloCommand": s.get(["serial", "helloCommand"]),
+            "log": s.getBoolean(["serial", "log"], config=c),
+            "additionalPorts": s.get(["serial", "additionalPorts"], config=c),
+            "additionalBaudrates": s.get(["serial", "additionalBaudrates"], config=c),
+            "blacklistedPorts": s.get(["serial", "blacklistedPorts"], config=c),
+            "blacklistedBaudrates": s.get(["serial", "blacklistedBaudrates"], config=c),
+            "longRunningCommands": s.get(["serial", "longRunningCommands"], config=c),
+            "checksumRequiringCommands": s.get(
+                ["serial", "checksumRequiringCommands"], config=c
+            ),
+            "blockedCommands": s.get(["serial", "blockedCommands"], config=c),
+            "ignoredCommands": s.get(["serial", "ignoredCommands"], config=c),
+            "pausingCommands": s.get(["serial", "pausingCommands"], config=c),
+            "sdCancelCommand": s.get(["serial", "sdCancelCommand"], config=c),
+            "emergencyCommands": s.get(["serial", "emergencyCommands"], config=c),
+            "helloCommand": s.get(["serial", "helloCommand"], config=c),
             "ignoreErrorsFromFirmware": s.getBoolean(
-                ["serial", "ignoreErrorsFromFirmware"]
+                ["serial", "ignoreErrorsFromFirmware"], config=c
             ),
-            "disconnectOnErrors": s.getBoolean(["serial", "disconnectOnErrors"]),
-            "triggerOkForM29": s.getBoolean(["serial", "triggerOkForM29"]),
-            "logPositionOnPause": s.getBoolean(["serial", "logPositionOnPause"]),
-            "logPositionOnCancel": s.getBoolean(["serial", "logPositionOnCancel"]),
-            "abortHeatupOnCancel": s.getBoolean(["serial", "abortHeatupOnCancel"]),
-            "supportResendsWithoutOk": s.get(["serial", "supportResendsWithoutOk"]),
-            "waitForStart": s.getBoolean(["serial", "waitForStartOnConnect"]),
-            "alwaysSendChecksum": s.getBoolean(["serial", "alwaysSendChecksum"]),
-            "neverSendChecksum": s.getBoolean(["serial", "neverSendChecksum"]),
+            "disconnectOnErrors": s.getBoolean(
+                ["serial", "disconnectOnErrors"], config=c
+            ),
+            "triggerOkForM29": s.getBoolean(["serial", "triggerOkForM29"], config=c),
+            "logPositionOnPause": s.getBoolean(
+                ["serial", "logPositionOnPause"], config=c
+            ),
+            "logPositionOnCancel": s.getBoolean(
+                ["serial", "logPositionOnCancel"], config=c
+            ),
+            "abortHeatupOnCancel": s.getBoolean(
+                ["serial", "abortHeatupOnCancel"], config=c
+            ),
+            "supportResendsWithoutOk": s.get(
+                ["serial", "supportResendsWithoutOk"], config=c
+            ),
+            "waitForStart": s.getBoolean(["serial", "waitForStartOnConnect"], config=c),
+            "alwaysSendChecksum": s.getBoolean(
+                ["serial", "alwaysSendChecksum"], config=c
+            ),
+            "neverSendChecksum": s.getBoolean(["serial", "neverSendChecksum"], config=c),
             "sendChecksumWithUnknownCommands": s.getBoolean(
-                ["serial", "sendChecksumWithUnknownCommands"]
+                ["serial", "sendChecksumWithUnknownCommands"], config=c
             ),
-            "unknownCommandsNeedAck": s.getBoolean(["serial", "unknownCommandsNeedAck"]),
-            "sdRelativePath": s.getBoolean(["serial", "sdRelativePath"]),
-            "sdAlwaysAvailable": s.getBoolean(["serial", "sdAlwaysAvailable"]),
-            "sdLowerCase": s.getBoolean(["serial", "sdLowerCase"]),
-            "swallowOkAfterResend": s.getBoolean(["serial", "swallowOkAfterResend"]),
-            "repetierTargetTemp": s.getBoolean(["serial", "repetierTargetTemp"]),
+            "unknownCommandsNeedAck": s.getBoolean(
+                ["serial", "unknownCommandsNeedAck"], config=c
+            ),
+            "sdRelativePath": s.getBoolean(["serial", "sdRelativePath"], config=c),
+            "sdAlwaysAvailable": s.getBoolean(["serial", "sdAlwaysAvailable"], config=c),
+            "sdLowerCase": s.getBoolean(["serial", "sdLowerCase"], config=c),
+            "swallowOkAfterResend": s.getBoolean(
+                ["serial", "swallowOkAfterResend"], config=c
+            ),
+            "repetierTargetTemp": s.getBoolean(
+                ["serial", "repetierTargetTemp"], config=c
+            ),
             "externalHeatupDetection": s.getBoolean(
-                ["serial", "externalHeatupDetection"]
+                ["serial", "externalHeatupDetection"], config=c
             ),
-            "ignoreIdenticalResends": s.getBoolean(["serial", "ignoreIdenticalResends"]),
-            "firmwareDetection": s.getBoolean(["serial", "firmwareDetection"]),
-            "blockWhileDwelling": s.getBoolean(["serial", "blockWhileDwelling"]),
-            "useParityWorkaround": s.get(["serial", "useParityWorkaround"]),
-            "sanityCheckTools": s.getBoolean(["serial", "sanityCheckTools"]),
-            "notifySuppressedCommands": s.get(["serial", "notifySuppressedCommands"]),
-            "sendM112OnError": s.getBoolean(["serial", "sendM112OnError"]),
+            "ignoreIdenticalResends": s.getBoolean(
+                ["serial", "ignoreIdenticalResends"], config=c
+            ),
+            "firmwareDetection": s.getBoolean(["serial", "firmwareDetection"], config=c),
+            "blockWhileDwelling": s.getBoolean(
+                ["serial", "blockWhileDwelling"], config=c
+            ),
+            "useParityWorkaround": s.get(["serial", "useParityWorkaround"], config=c),
+            "sanityCheckTools": s.getBoolean(["serial", "sanityCheckTools"], config=c),
+            "notifySuppressedCommands": s.get(
+                ["serial", "notifySuppressedCommands"], config=c
+            ),
+            "sendM112OnError": s.getBoolean(["serial", "sendM112OnError"], config=c),
             "disableSdPrintingDetection": s.getBoolean(
-                ["serial", "disableSdPrintingDetection"]
+                ["serial", "disableSdPrintingDetection"], config=c
             ),
-            "ackMax": s.getInt(["serial", "ackMax"]),
-            "maxTimeoutsIdle": s.getInt(["serial", "maxCommunicationTimeouts", "idle"]),
+            "ackMax": s.getInt(["serial", "ackMax"], config=c),
+            "maxTimeoutsIdle": s.getInt(
+                ["serial", "maxCommunicationTimeouts", "idle"], config=c
+            ),
             "maxTimeoutsPrinting": s.getInt(
-                ["serial", "maxCommunicationTimeouts", "printing"]
+                ["serial", "maxCommunicationTimeouts", "printing"], config=c
             ),
-            "maxTimeoutsLong": s.getInt(["serial", "maxCommunicationTimeouts", "long"]),
+            "maxTimeoutsLong": s.getInt(
+                ["serial", "maxCommunicationTimeouts", "long"], config=c
+            ),
             "capAutoreportTemp": s.getBoolean(
-                ["serial", "capabilities", "autoreport_temp"]
+                ["serial", "capabilities", "autoreport_temp"], config=c
             ),
             "capAutoreportSdStatus": s.getBoolean(
-                ["serial", "capabilities", "autoreport_sdstatus"]
+                ["serial", "capabilities", "autoreport_sdstatus"], config=c
             ),
             "capAutoreportPos": s.getBoolean(
-                ["serial", "capabilities", "autoreport_pos"]
+                ["serial", "capabilities", "autoreport_pos"], config=c
             ),
-            "capBusyProtocol": s.getBoolean(["serial", "capabilities", "busy_protocol"]),
+            "capBusyProtocol": s.getBoolean(
+                ["serial", "capabilities", "busy_protocol"], config=c
+            ),
             "capEmergencyParser": s.getBoolean(
-                ["serial", "capabilities", "emergency_parser"]
+                ["serial", "capabilities", "emergency_parser"], config=c
             ),
-            "capExtendedM20": s.getBoolean(["serial", "capabilities", "extended_m20"]),
-            "resendRatioThreshold": s.getInt(["serial", "resendRatioThreshold"]),
-            "resendRatioStart": s.getInt(["serial", "resendRatioStart"]),
-            "ignoreEmptyPorts": s.getBoolean(["serial", "ignoreEmptyPorts"]),
-            "encoding": s.get(["serial", "encoding"]),
+            "capExtendedM20": s.getBoolean(
+                ["serial", "capabilities", "extended_m20"], config=c
+            ),
+            "resendRatioThreshold": s.getInt(
+                ["serial", "resendRatioThreshold"], config=c
+            ),
+            "resendRatioStart": s.getInt(["serial", "resendRatioStart"], config=c),
+            "ignoreEmptyPorts": s.getBoolean(["serial", "ignoreEmptyPorts"], config=c),
+            "encoding": s.get(["serial", "encoding"], config=c),
             "enableShutdownActionCommand": s.get(
-                ["serial", "enableShutdownActionCommand"]
+                ["serial", "enableShutdownActionCommand"], config=c
             ),
         },
         "folder": {
@@ -274,18 +360,20 @@ def getSettings():
             "watched": s.getBaseFolder("watched"),
         },
         "temperature": {
-            "profiles": s.get(["temperature", "profiles"]),
-            "cutoff": s.getInt(["temperature", "cutoff"]),
-            "sendAutomatically": s.getBoolean(["temperature", "sendAutomatically"]),
+            "profiles": s.get(["temperature", "profiles"], config=c),
+            "cutoff": s.getInt(["temperature", "cutoff"], config=c),
+            "sendAutomatically": s.getBoolean(
+                ["temperature", "sendAutomatically"], config=c
+            ),
             "sendAutomaticallyAfter": s.getInt(
-                ["temperature", "sendAutomaticallyAfter"], min=0, max=30
+                ["temperature", "sendAutomaticallyAfter"], min=0, max=30, config=c
             ),
         },
         "system": {
-            "actions": s.get(["system", "actions"]),
-            "events": s.get(["system", "events"]),
+            "actions": s.get(["system", "actions"], config=c),
+            "events": s.get(["system", "events"], config=c),
         },
-        "terminalFilters": s.get(["terminalFilters"]),
+        "terminalFilters": s.get(["terminalFilters"], config=c),
         "scripts": {
             "gcode": {
                 "afterPrinterConnected": None,
@@ -303,48 +391,40 @@ def getSettings():
         "server": {
             "commands": {
                 "systemShutdownCommand": s.get(
-                    ["server", "commands", "systemShutdownCommand"]
+                    ["server", "commands", "systemShutdownCommand"], config=c
                 ),
                 "systemRestartCommand": s.get(
-                    ["server", "commands", "systemRestartCommand"]
+                    ["server", "commands", "systemRestartCommand"], config=c
                 ),
                 "serverRestartCommand": s.get(
-                    ["server", "commands", "serverRestartCommand"]
+                    ["server", "commands", "serverRestartCommand"], config=c
                 ),
             },
             "diskspace": {
-                "warning": s.getInt(["server", "diskspace", "warning"]),
-                "critical": s.getInt(["server", "diskspace", "critical"]),
+                "warning": s.getInt(["server", "diskspace", "warning"], config=c),
+                "critical": s.getInt(["server", "diskspace", "critical"], config=c),
             },
             "onlineCheck": {
-                "enabled": s.getBoolean(["server", "onlineCheck", "enabled"]),
-                "interval": int(s.getInt(["server", "onlineCheck", "interval"]) / 60),
-                "host": s.get(["server", "onlineCheck", "host"]),
-                "port": s.getInt(["server", "onlineCheck", "port"]),
-                "name": s.get(["server", "onlineCheck", "name"]),
+                "enabled": s.getBoolean(["server", "onlineCheck", "enabled"], config=c),
+                "interval": int(
+                    s.getInt(["server", "onlineCheck", "interval"], config=c) / 60
+                ),
+                "host": s.get(["server", "onlineCheck", "host"], config=c),
+                "port": s.getInt(["server", "onlineCheck", "port"], config=c),
+                "name": s.get(["server", "onlineCheck", "name"], config=c),
             },
             "pluginBlacklist": {
-                "enabled": s.getBoolean(["server", "pluginBlacklist", "enabled"]),
-                "url": s.get(["server", "pluginBlacklist", "url"]),
-                "ttl": int(s.getInt(["server", "pluginBlacklist", "ttl"]) / 60),
+                "enabled": s.getBoolean(
+                    ["server", "pluginBlacklist", "enabled"], config=c
+                ),
+                "url": s.get(["server", "pluginBlacklist", "url"], config=c),
+                "ttl": int(s.getInt(["server", "pluginBlacklist", "ttl"], config=c) / 60),
             },
-            "allowFraming": s.getBoolean(["server", "allowFraming"]),
+            "allowFraming": s.getBoolean(["server", "allowFraming"], config=c),
         },
-        "devel": {"pluginTimings": s.getBoolean(["devel", "pluginTimings"])},
-        "slicing": {"defaultSlicer": s.get(["slicing", "defaultSlicer"])},
+        "devel": {"pluginTimings": s.getBoolean(["devel", "pluginTimings"], config=c)},
+        "slicing": {"defaultSlicer": s.get(["slicing", "defaultSlicer"], config=c)},
     }
-
-    gcode_scripts = s.listScripts("gcode")
-    if gcode_scripts:
-        data["scripts"] = {"gcode": {}}
-        for name in gcode_scripts:
-            data["scripts"]["gcode"][name] = s.loadScript("gcode", name, source=True)
-
-    plugin_settings = _get_plugin_settings()
-    if len(plugin_settings):
-        data["plugins"] = plugin_settings
-
-    return jsonify(data)
 
 
 def _get_plugin_settings():
@@ -377,6 +457,99 @@ def _get_plugin_settings():
         except Exception:
             logger.exception(
                 "Could not load settings for plugin {name} ({version})".format(
+                    version=plugin._plugin_version, name=plugin._plugin_name
+                ),
+                extra={"plugin": plugin._identifier},
+            )
+
+    return data
+
+
+@api.route("/settings/default", methods=["POST"])
+def getSettingDefault():
+
+    path = (request.json or {}).get("path", None)
+
+    if not path or type(path) is not list:
+        abort(400, "Invalid Path")
+
+    if path[0] == "scripts":
+        data = _get_script_defaults()
+        path.pop(0)
+    elif path[0] == "plugins":
+        data = _get_plugin_defaults()
+        path.pop(0)
+    else:
+        s = settings()
+        data = _get_settings_data_model(s, c=s._default_map)
+        data["folder"] = (
+            {
+                "uploads": s._get_default_folder("uploads"),
+                "timelapse": s._get_default_folder("timelapse"),
+                "timelapseTmp": s._get_default_folder("timelapse_tmp"),
+                "logs": s._get_default_folder("logs"),
+                "watched": s._get_default_folder("watched"),
+            },
+        )
+
+    for key in path:
+        if key not in data:
+            abort(400, "Key not found: " + key)
+        data = data[key]
+
+    default_value = data
+
+    return jsonify({"path": path, "value": default_value})
+
+
+def _get_script_defaults():
+    default_scripts = ScriptsConfig()
+    return {
+        "gcode": {
+            "afterPrinterConnected": default_scripts.GcodeScriptsConfig.afterPrinterConnected,
+            "beforePrinterDisconnected": default_scripts.GcodeScriptsConfig.beforePrinterDisconnected,
+            "beforePrintStarted": default_scripts.GcodeScriptsConfig.beforePrintStarted,
+            "afterPrintCancelled": default_scripts.GcodeScriptsConfig.afterPrintCancelled,
+            "afterPrintDone": default_scripts.GcodeScriptsConfig.afterPrintDone,
+            "beforePrintPaused": default_scripts.GcodeScriptsConfig.beforePrintPaused,
+            "afterPrintResumed": default_scripts.GcodeScriptsConfig.afterPrintResumed,
+            "beforeToolChange": default_scripts.GcodeScriptsConfig.beforeToolChange,
+            "afterToolChange": default_scripts.GcodeScriptsConfig.afterToolChange,
+            "snippets": default_scripts.GcodeScriptsConfig.afterToolChange,
+        }
+    }
+
+
+def _get_plugin_defaults():
+    logger = logging.getLogger(__name__)
+
+    data = {}
+
+    def process_plugin_result(name, result):
+        if result:
+            try:
+                jsonify(test=result)
+            except Exception:
+                logger.exception(
+                    "Error while jsonifying default settings from plugin {}, please contact the plugin author about this".format(
+                        name
+                    )
+                )
+                raise
+            else:
+                if "__enabled" in result:
+                    del result["__enabled"]
+                data[name] = result
+
+    for plugin in octoprint.plugin.plugin_manager().get_implementations(
+        octoprint.plugin.SettingsPlugin
+    ):
+        try:
+            result = plugin.get_settings_defaults()
+            process_plugin_result(plugin._identifier, result)
+        except Exception:
+            logger.exception(
+                "Could not load default settings for plugin {name} ({version})".format(
                     version=plugin._plugin_version, name=plugin._plugin_name
                 ),
                 extra={"plugin": plugin._identifier},
