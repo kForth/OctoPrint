@@ -664,7 +664,7 @@ class gcode:
 
                 # calculate control points
                 control1 = Vector3D(oldPos.x + i, oldPos.y + j, oldPos.z)
-                control2 = Vector3D(oldPos.x + p, oldPos.y + q, oldPos.z)
+                control2 = Vector3D(x + p, y + q, z)
 
                 spline_length = None
 
