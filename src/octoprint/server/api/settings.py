@@ -202,6 +202,7 @@ def getSettings():
             "ignoredCommands": s.get(["serial", "ignoredCommands"]),
             "pausingCommands": s.get(["serial", "pausingCommands"]),
             "sdCancelCommand": s.get(["serial", "sdCancelCommand"]),
+            "sdRefreshCommand": s.get(["serial", "sdRefreshCommand"]),
             "emergencyCommands": s.get(["serial", "emergencyCommands"]),
             "helloCommand": s.get(["serial", "helloCommand"]),
             "ignoreErrorsFromFirmware": s.getBoolean(
@@ -815,6 +816,8 @@ def _saveSettings(data):
             s.set(["serial", "pausingCommands"], data["serial"]["pausingCommands"])
         if "sdCancelCommand" in data["serial"]:
             s.set(["serial", "sdCancelCommand"], data["serial"]["sdCancelCommand"])
+        if "sdRefreshCommand" in data["serial"]:
+            s.set(["serial", "sdRefreshCommand"], data["serial"]["sdRefreshCommand"])
         if "emergencyCommands" in data["serial"] and isinstance(
             data["serial"]["emergencyCommands"], (list, tuple)
         ):

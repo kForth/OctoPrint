@@ -186,6 +186,7 @@ class SerialConfig(BaseModel):
 
     sdLowerCase: bool = False
     sdCancelCommand: str = "M25"
+    sdRefreshCommand: str = "M20"
     maxNotSdPrinting: int = 2
     swallowOkAfterResend: bool = True
 

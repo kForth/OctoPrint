@@ -572,6 +572,7 @@ class MachineCom:
         self._sdRelativePath = settings().getBoolean(["serial", "sdRelativePath"])
         self._sdLowerCase = settings().getBoolean(["serial", "sdLowerCase"])
         self._sdCancelCommand = settings().get(["serial", "sdCancelCommand"])
+        self._sdRefreshCommand = settings().get(["serial", "sdRefreshCommand"])
         self._blockWhileDwelling = settings().getBoolean(["serial", "blockWhileDwelling"])
         self._send_m112_on_error = settings().getBoolean(["serial", "sendM112OnError"])
         self._disable_sd_printing_detection = settings().getBoolean(
@@ -2006,10 +2007,9 @@ class MachineCom:
         if tags is None:
             tags = set()
 
-        if self._capability_supported(self.CAPABILITY_EXTENDED_M20):
-            command = "M20 L"
-        else:
-            command = "M20"
+        command = self._sdRefreshCommand
+        if self._capability_supported(self.CAPABILITY_EXTENDED_M20) and command == "M20":
+            command += " L"
 
         self.sendCommand(
             command,
