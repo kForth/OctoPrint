@@ -66,8 +66,32 @@
         </form>
     </div>
     <div class="modal-footer">
-        <a href="javascript:void(0)" class="btn" data-dismiss="modal" aria-hidden="true">{{ _('Cancel') }}</a>
-        <a href="javascript:void(0)" class="btn btn-primary upload-rename">{{ _('Upload (rename)') }}</a>
-        <a href="javascript:void(0)" class="btn btn-danger upload-overwrite">{{ _('Upload (overwrite)') }}</a>
+        <span data-bind="css: { 'btn-group': duplicateFileModalQueue().length > 0 }">
+            <a href="javascript:void(0)" class="btn upload-skip">{{ _('Skip File') }}</a>
+            <button class="btn dropdown-toggle" data-toggle="dropdown" data-bind="visible: duplicateFileModalQueue().length > 0"><span class="caret"></span></button>
+            <ul class="dropdown-menu" data-bind="visible: duplicateFileModalQueue().length > 0">
+                <li><a href="javascript:void(0)" class="upload-skip-all">
+                    {{ _('Skip All Conflicts') }} (<span data-bind="text: duplicateFileModalQueue().length + 1"></span>)
+                </a></li>
+            </ul>
+        </span>
+        <span data-bind="css: { 'btn-group': duplicateFileModalQueue().length > 0 }">
+            <a href="javascript:void(0)" class="btn btn-primary upload-rename">{{ _('Upload & Rename') }}</a>
+            <button class="btn btn-primary dropdown-toggle" data-toggle="dropdown" data-bind="visible: duplicateFileModalQueue().length > 0"><span class="caret"></span></button>
+            <ul class="dropdown-menu" data-bind="visible: duplicateFileModalQueue().length > 0">
+                <li><a href="javascript:void(0)" class="upload-rename-all">
+                    {{ _('Auto Rename All Conflicts') }} (<span data-bind="text: duplicateFileModalQueue().length + 1"></span>)
+                </a></li>
+            </ul>
+        </span>
+        <span data-bind="css: { 'btn-group': duplicateFileModalQueue().length > 0 }">
+            <a href="javascript:void(0)" class="btn btn-danger upload-overwrite">{{ _('Upload & Overwrite') }}</a>
+            <button class="btn btn-danger dropdown-toggle" data-toggle="dropdown" data-bind="visible: duplicateFileModalQueue().length > 0"><span class="caret"></span></button>
+            <ul class="dropdown-menu" data-bind="visible: duplicateFileModalQueue().length > 0">
+                <li><a href="javascript:void(0)" class="upload-overwrite-all">
+                    {{ _('Overwrite All Conflicts') }} (<span data-bind="text: duplicateFileModalQueue().length + 1"></span>)
+                </a></li>
+            </ul>
+        </span>
     </div>
 </div>
