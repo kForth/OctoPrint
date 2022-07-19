@@ -77,6 +77,9 @@ $(function () {
         self.listElement = undefined;
 
         self.ignoreUpdatedFilesEvent = false;
+        self.filesCurrentlyUploading = {};
+        self.duplicateFileModalQueue = ko.observableArray([]);
+        self.duplicateFileModalLocked = false;
 
         self.addingFolder = ko.observable(false);
         self.activeRemovals = ko.observableArray([]);
@@ -531,26 +534,8 @@ $(function () {
             }
 
             if (focus) {
-                // got a file to scroll to
-                var entryElement = self.getEntryElement({
-                    path: focus.path,
-                    origin: focus.location
-                });
-                if (entryElement) {
-                    // scroll to uploaded element
-                    self.listElement.scrollTop(entryElement.offsetTop);
-
-                    // highlight uploaded element
-                    var element = $(entryElement);
-                    element.on(
-                        "webkitAnimationEnd oanimationend msAnimationEnd animationend",
-                        function (e) {
-                            // remove highlight class again
-                            element.removeClass("highlight");
-                        }
-                    );
-                    element.addClass("highlight");
-                }
+                // got a file to focus on
+                self._highlightFileElement(focus, true);
             }
 
             if (response.free !== undefined) {
@@ -1386,7 +1371,10 @@ $(function () {
         };
 
         self.onEventUpdatedFiles = function (payload) {
-            if (self.ignoreUpdatedFilesEvent) {
+            if (
+                self.ignoreUpdatedFilesEvent ||
+                !_.isEmpty(self.filesCurrentlyUploading)
+            ) {
                 return;
             }
 
@@ -1552,8 +1540,7 @@ $(function () {
                 submit: self._handleUploadStart,
                 done: self._handleUploadDone,
                 fail: self._handleUploadFail,
-                always: self._handleUploadAlways,
-                progressall: self._handleUploadProgress
+                progress: self._handleUploadProgress
             });
         };
 
@@ -1585,6 +1572,18 @@ $(function () {
             var file = data.files[0];
             var path = self.currentPath();
 
+            self.filesCurrentlyUploading[file.name] = {
+                first: _.size(self.filesCurrentlyUploading) == 0,
+                location: undefined,
+                file: file.name,
+                size: file.size,
+                started: false,
+                skipped: false,
+                failed: false,
+                done: false,
+                loaded: 0
+            };
+
             var formData = {};
             if (path !== "") {
                 formData.path = path;
@@ -1595,64 +1594,13 @@ $(function () {
                     .exists("local", path, file.name)
                     .done(function (response) {
                         if (response.exists) {
-                            $("h3", self.uploadExistsDialog).text(
-                                _.sprintf(gettext("File already exists: %(name)s"), {
-                                    name: file.name
-                                })
+                            self._handleDuplicateFile(
+                                response,
+                                data,
+                                file,
+                                path,
+                                formData
                             );
-                            $("input", self.uploadExistsDialog)
-                                .val("")
-                                .prop("placeholder", response.suggestion);
-                            $("a.upload-rename", self.uploadExistsDialog)
-                                .prop("disabled", false)
-                                .off("click")
-                                .on("click", function () {
-                                    var newName = $(
-                                        "input",
-                                        self.uploadExistsDialog
-                                    ).val();
-                                    if (newName === "") newName = response.suggestion;
-
-                                    OctoPrint.files
-                                        .exists("local", path, newName)
-                                        .done(function (r) {
-                                            if (r.exists) {
-                                                $(
-                                                    ".control-group",
-                                                    self.uploadExistsDialog
-                                                ).addClass("error");
-                                                $(
-                                                    ".help-block",
-                                                    self.uploadExistsDialog
-                                                ).show();
-                                            } else {
-                                                $(
-                                                    ".control-group",
-                                                    self.uploadExistsDialog
-                                                ).removeClass("error");
-                                                $(
-                                                    ".help-block",
-                                                    self.uploadExistsDialog
-                                                ).hide();
-
-                                                self.uploadExistsDialog.modal("hide");
-
-                                                formData.filename = newName;
-                                                formData.noOverwrite = true;
-                                                data.formData = formData;
-
-                                                data.submit();
-                                            }
-                                        });
-                                });
-                            $("a.upload-overwrite", self.uploadExistsDialog)
-                                .off("click")
-                                .on("click", function () {
-                                    self.uploadExistsDialog.modal("hide");
-                                    data.formData = formData;
-                                    data.submit();
-                                });
-                            self.uploadExistsDialog.modal("show");
                         } else {
                             data.formData = formData;
                             data.submit();
@@ -1664,29 +1612,146 @@ $(function () {
             }
         };
 
+        self._handleDuplicateFile = function (response, data, file, path, formData) {
+            // Queue handling this file if the modal is already open
+            if (!self._requestDuplicateFileModalLock()) {
+                self.duplicateFileModalQueue.push(arguments);
+                return;
+            }
+
+            $("h3", self.uploadExistsDialog).text(
+                _.sprintf(gettext("File already exists: %(name)s"), {
+                    name: file.name
+                })
+            );
+            $("input", self.uploadExistsDialog)
+                .val("")
+                .prop("placeholder", response.suggestion);
+            $("a.upload-skip", self.uploadExistsDialog)
+                .off("click")
+                .on("click", function () {
+                    self.filesCurrentlyUploading[file.name].skipped = true;
+                    self._unlockDuplicateFileModal();
+                });
+            $("a.upload-skip-all", self.uploadExistsDialog)
+                .off("click")
+                .on("click", function () {
+                    while (self.duplicateFileModalQueue().length > 0) {
+                        self.duplicateFileModalQueue.pop(0);
+                    }
+                    self._unlockDuplicateFileModal();
+                });
+            $("a.upload-rename", self.uploadExistsDialog)
+                .prop("disabled", false)
+                .off("click")
+                .on("click", function () {
+                    var newName = $("input", self.uploadExistsDialog).val();
+                    if (newName === "") newName = response.suggestion;
+
+                    OctoPrint.files.exists("local", path, newName).done(function (r) {
+                        if (r.exists) {
+                            $(".control-group", self.uploadExistsDialog).addClass(
+                                "error"
+                            );
+                            $(".help-block", self.uploadExistsDialog).show();
+                        } else {
+                            $(".control-group", self.uploadExistsDialog).removeClass(
+                                "error"
+                            );
+                            $(".help-block", self.uploadExistsDialog).hide();
+
+                            formData.filename = newName;
+                            formData.noOverwrite = true;
+                            data.formData = formData;
+                            data.submit();
+
+                            self._unlockDuplicateFileModal();
+                        }
+                    });
+                });
+            $("a.upload-rename-all", self.uploadExistsDialog)
+                .off("click")
+                .on("click", function () {
+                    formData.filename = response.suggestion;
+                    formData.noOverwrite = true;
+                    data.formData = formData;
+                    data.submit();
+                    while (self.duplicateFileModalQueue().length > 0) {
+                        var nextFileArguments = self.duplicateFileModalQueue.pop(0);
+                        var nextResponse = nextFileArguments[0];
+                        var nextData = nextFileArguments[1];
+
+                        nextData.formData = nextFileArguments[4];
+                        nextData.formData.filename = nextResponse.suggestion;
+                        nextData.formData.noOverwrite = true;
+                        nextData.submit();
+                    }
+                    self._unlockDuplicateFileModal();
+                });
+            $("a.upload-overwrite", self.uploadExistsDialog)
+                .off("click")
+                .on("click", function () {
+                    data.formData = formData;
+                    data.submit();
+                    self._unlockDuplicateFileModal();
+                });
+            $("a.upload-overwrite-all", self.uploadExistsDialog)
+                .off("click")
+                .on("click", function () {
+                    data.formData = formData;
+                    data.submit();
+                    while (self.duplicateFileModalQueue().length > 0) {
+                        var nextFileArguments = self.duplicateFileModalQueue.pop(0);
+                        var nextData = nextFileArguments[1];
+
+                        nextData.formData = nextFileArguments[4];
+                        nextData.submit();
+                    }
+                    self._unlockDuplicateFileModal();
+                });
+
+            self.uploadExistsDialog.modal({show: true, backdrop: "static"});
+        };
+
+        self._requestDuplicateFileModalLock = function () {
+            if (self.duplicateFileModalLocked) {
+                return false;
+            }
+            self.duplicateFileModalLocked = true;
+            return true;
+        };
+
+        self._unlockDuplicateFileModal = function () {
+            self.duplicateFileModalLocked = false;
+            if (self.duplicateFileModalQueue().length > 0) {
+                self._handleDuplicateFile.apply(
+                    null,
+                    self.duplicateFileModalQueue.pop(0)
+                );
+            } else {
+                self.uploadExistsDialog.modal("hide");
+            }
+        };
+
         self._handleUploadStart = function (e, data) {
-            self.ignoreUpdatedFilesEvent = true;
+            var file = self.filesCurrentlyUploading[data.files[0].name];
+            file.started = true;
+            file.loaded = 0;
             return true;
         };
 
         self._handleUploadDone = function (e, data) {
-            self._setProgressBar(100, gettext("Refreshing list ..."), true);
-
-            var focus = undefined;
+            var file = self.filesCurrentlyUploading[data.files[0].name];
+            file.done = true;
+            file.loaded = file.size;
             if (data.result.files.hasOwnProperty("sdcard")) {
-                focus = {location: "sdcard", path: data.result.files.sdcard.path};
+                file.location = "sdcard";
+                file.path = data.result.files.sdcard.path;
             } else if (data.result.files.hasOwnProperty("local")) {
-                focus = {location: "local", path: data.result.files.local.path};
+                file.location = "local";
+                file.path = data.result.files.local.path;
             }
-            self.requestData({focus: focus}).done(function () {
-                if (data.result.done) {
-                    self._setProgressBar(0, "", false);
-                }
-            });
-
-            if (focus && _.endsWith(focus.path.toLowerCase(), ".stl")) {
-                self.slicing.show(focus.location, focus.path);
-            }
+            self._updateUploadProgress();
         };
 
         self._handleUploadFail = function (e, data) {
@@ -1696,6 +1761,7 @@ $(function () {
             extensions = extensions.join(", ");
 
             var error = "<p>";
+            error += "<b>" + data.files[0].name + "</b><br>";
             switch (data.jqXHR.status) {
                 case 409:
                     // already printing or otherwise busy
@@ -1740,22 +1806,15 @@ $(function () {
                 type: "error",
                 hide: false
             });
-            self._setProgressBar(0, "", false);
-        };
 
-        self._handleUploadAlways = function (e, data) {
-            self.ignoreUpdatedFilesEvent = false;
+            self.filesCurrentlyUploading[data.files[0].name].failed = true;
+            self._updateUploadProgress();
         };
 
         self._handleUploadProgress = function (e, data) {
-            var progress = parseInt((data.loaded / data.total) * 100, 10);
-            var uploaded = progress >= 100;
+            self.filesCurrentlyUploading[data.files[0].name].loaded = data.loaded;
 
-            self._setProgressBar(
-                progress,
-                uploaded ? gettext("Saving ...") : gettext("Uploading ..."),
-                uploaded
-            );
+            self._updateUploadProgress();
         };
 
         self._dragNDropTarget = null;
@@ -1767,6 +1826,105 @@ $(function () {
             if (self.dropZoneSd) self.dropZoneSdBackground.removeClass("hover");
             if (self.dropZone) self.dropZoneBackground.removeClass("hover");
             self._dragNDropTarget = null;
+        };
+
+        self._updateUploadProgress = function () {
+            var filesDone = _.values(
+                _.filter(self.filesCurrentlyUploading, function (e) {
+                    return e.done;
+                })
+            );
+            var filesSkipped = _.values(
+                _.filter(self.filesCurrentlyUploading, function (e) {
+                    return e.skipped || e.failed;
+                })
+            );
+            var numFiles = _.size(self.filesCurrentlyUploading);
+            var numFilesDone = _.size(filesDone);
+            var numFilesSkipped = _.size(filesSkipped);
+
+            // Calculate total upload progress
+            var totalBytes = _.sum(
+                _.mapValues(self.filesCurrentlyUploading, function (e) {
+                    return e.size;
+                })
+            );
+            var loadedBytes = _.sum(
+                _.mapValues(self.filesCurrentlyUploading, function (e) {
+                    return e.done || e.failed ? e.size : e.loaded;
+                })
+            );
+            var uploadProgress = (loadedBytes / totalBytes) * 100;
+
+            // All files are done or have failed
+            if (numFilesDone + numFilesSkipped >= numFiles) {
+                if (numFilesDone > 0) {
+                    self.filesCurrentlyUploading = {};
+
+                    self._setProgressBar(100, gettext("Refreshing list ..."), true);
+
+                    var focus = undefined;
+                    var firstFileAdded = _.values(
+                        _.filter(filesDone, function (e) {
+                            return e.first;
+                        })
+                    )[0];
+                    if (firstFileAdded !== undefined) {
+                        var focus = {
+                            location: firstFileAdded.location,
+                            path: firstFileAdded.path
+                        };
+
+                        if (_.endsWith(focus.path.toLowerCase(), ".stl")) {
+                            self.slicing.show(focus.location, focus.path);
+                        }
+                    }
+
+                    self.requestData({focus: focus}).done(function () {
+                        self._setProgressBar(0, "", false);
+
+                        // Highlight all of the added files
+                        _.each(filesDone, self._highlightFileElement);
+                    });
+                } else {
+                    self._setProgressBar(0, "", false);
+                }
+            }
+            // Files are at 100% but haven't reported 'done' yet
+            else if (uploadProgress >= 100) {
+                self._setProgressBar(100, gettext("Saving ..."), true);
+            }
+            // File upload in progress
+            else {
+                self._setProgressBar(
+                    parseInt(uploadProgress, 10),
+                    gettext("Uploading ..."),
+                    false
+                );
+            }
+        };
+
+        self._highlightFileElement = function (file, scroll) {
+            var entryElement = self.getEntryElement({
+                path: file.path,
+                origin: file.location
+            });
+            if (entryElement) {
+                if (scroll === true) {
+                    self.listElement.scrollTop(entryElement.offsetTop);
+                }
+
+                // highlight uploaded element
+                var element = $(entryElement);
+                element.on(
+                    "webkitAnimationEnd oanimationend msAnimationEnd animationend",
+                    function (e) {
+                        // remove highlight class again
+                        element.removeClass("highlight");
+                    }
+                );
+                element.addClass("highlight");
+            }
         };
 
         self._handleDragLeave = function (e) {
