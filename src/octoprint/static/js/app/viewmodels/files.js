@@ -1775,6 +1775,12 @@ $(function () {
         };
 
         self._handleDragEnter = function (e) {
+            var dataTransfer = e.originalEvent.dataTransfer || {};
+            var dataTypes = dataTransfer.types || [];
+            if (dataTypes && dataTypes.indexOf("Files") < 0) {
+                return;
+            }
+
             self.dropOverlay.addClass("in");
 
             var foundLocal = false;
