@@ -980,6 +980,7 @@ class Server:
                     ),
                     "file_prefix": "octoprint-file-upload-",
                     "file_suffix": ".tmp",
+                    "path": settings().getBaseFolder("uploads"),
                     "suffixes": upload_suffixes,
                 },
             )
