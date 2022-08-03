@@ -37,6 +37,19 @@ function getSplineParams(cmd) {
     };
 }
 
+function getArcLength(arc) {
+    var length = Math.abs(arc.startAngle - arc.endAngle) * arc.r;
+    if (arc.cw) return deg360 * arc.r - length;
+    else return length;
+}
+
+function getSplineLength(spline) {
+    // TODO: Calculate/estimate spline length
+    var diffX = spline.x - spline.prevX;
+    var diffY = spline.y - spline.prevY;
+    return Math.sqrt(diffX * diffX + diffY * diffY);
+}
+
 function getArcMinMax(arc) {
     var startAngle, endAngle;
     var bounds = {

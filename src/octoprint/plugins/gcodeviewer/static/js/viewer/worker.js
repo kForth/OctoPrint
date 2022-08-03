@@ -293,18 +293,26 @@ var analyzeModel = function () {
                 cmds[j].y !== undefined &&
                 !isNaN(cmds[j].y)
             ) {
-                var diffX = cmds[j].x - cmds[j].prevX;
-                var diffY = cmds[j].y - cmds[j].prevY;
+                var feedrate = cmds[j].speed / 60;
+                var distance;
+                if (arc !== undefined) {
+                    distance = getArcLength(arc);
+                } else if (spline !== undefined) {
+                    distance = getSplineLength(spline);
+                } else {
+                    var diffX = cmds[j].x - cmds[j].prevX;
+                    var diffY = cmds[j].y - cmds[j].prevY;
+                    distance = Math.sqrt(diffX * diffX + diffY * diffY);
+                }
+
                 if (move) {
-                    printTimeAdd =
-                        Math.sqrt(diffX * diffX + diffY * diffY) / (cmds[j].speed / 60);
+                    printTimeAdd = distance / feedrate;
                 } else if (extrude) {
-                    tmp1 =
-                        Math.sqrt(diffX * diffX + diffY * diffY) / (cmds[j].speed / 60);
-                    tmp2 = Math.abs(cmds[j].extrusion / (cmds[j].speed / 60));
+                    tmp1 = distance / feedrate;
+                    tmp2 = Math.abs(cmds[j].extrusion / feedrate);
                     printTimeAdd = Math.max(tmp1, tmp2);
                 } else if (retract) {
-                    printTimeAdd = Math.abs(cmds[j].extrusion / (cmds[j].speed / 60));
+                    printTimeAdd = Math.abs(cmds[j].extrusion / feedrate);
                 }
             } else {
                 printTimeAdd = 0;
