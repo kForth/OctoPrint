@@ -1417,6 +1417,31 @@ $(function () {
             firstRequest.resolve();
         };
 
+        self.resetSetting = function (elemId) {
+            var elem = $("#" + elemId);
+            var elemData = elem.attr("data-bind");
+            var bindStr = /(value|checked): ([^\s,]*)/.exec(elemData);
+            var settingProp = bindStr[1];
+            var settingPath = bindStr[2].split("_");
+            OctoPrint.settings
+                .getDefaultValue({path: settingPath})
+                .done(function (data, status, xhr) {
+                    if (elem.is("select")) {
+                        elem.children("option:selected").removeProp("selected");
+                        elem.children("option[value='" + data.value + "]").prop(
+                            "selected",
+                            true
+                        );
+                    } else if (settingProp !== undefined) {
+                        elem.prop(settingProp, data.value);
+                    } else if (elem.is('input[type:"checkbox"]')) {
+                        elem.prop("checked", data.value);
+                    } else {
+                        elem.val(data.value);
+                    }
+                });
+        };
+
         self.cancelData = function () {
             // revert unsaved changes
             self.fromResponse(self.lastReceivedSettings);

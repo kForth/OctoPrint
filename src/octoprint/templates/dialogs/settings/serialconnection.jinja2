@@ -124,14 +124,22 @@
                 <div class="control-group" title="{{ _('Interval in which to poll for the temperature information from the printer')|edq }}">
                     <label class="control-label" for="settings-serialTimeoutTemperature">{{ _('Temperature interval (polling)') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutTemperature'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: serial_timeoutTemperature" id="settings-serialTimeoutTemperature">
                             <span class="add-on">s</span>
                         </div>
                         <span class="help-inline">{{ _('When printing or idle')}}</span>
                     </div>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutTemperatureTargetSet'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: serial_timeoutTemperatureTargetSet" id="settings-serialTimeoutTemperatureTargetSet">
                             <span class="add-on">s</span>
                         </div>
@@ -141,7 +149,11 @@
                 <div class="control-group" title="{{ _('Temperature report interval to request from autoreport capable firmwares. A value of 0 disables autoreporting by the firmware and forces polling.') }}">
                     <label class="control-label" for="settings-serialTimeoutTemperatureAutoreport">{{ _('Temperature interval (autoreport)') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutTemperatureAutoreport'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: serial_timeoutTemperatureAutoreport" id="settings-serialTimeoutTemperatureAutoreport">
                             <span class="add-on">s</span>
                         </div>
@@ -151,7 +163,11 @@
                 <div class="control-group" title="{{ _('Interval in which to poll for the SD printing status information from the printer while printing')|edq }}">
                     <label class="control-label" for="settings-serialTimeoutSdStatus">{{ _('SD status interval (polling)') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutSdStatus'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: serial_timeoutSdStatus" id="settings-serialTimeoutSdStatus">
                             <span class="add-on">s</span>
                         </div>
@@ -161,7 +177,11 @@
                 <div class="control-group" title="{{ _('SD status interval to request from autoreport capable firmwares. A value of 0 disables autoreporting by the firmware and forces polling.')|edq }}">
                     <label class="control-label" for="settings-serialTimeoutSdStatusAutoreport">{{ _('SD status interval (autoreport)') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutSdStatusAutoreport'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: serial_timeoutSdStatusAutoreport" id="settings-serialTimeoutSdStatusAutoreport">
                             <span class="add-on">s</span>
                         </div>
@@ -171,7 +191,11 @@
                 <div class="control-group" title="{{ _('Position interval to request from autoreport capable firmwares. A value of 0 disables autoreporting by the firmware.')|edq }}">
                     <label class="control-label" for="settings-serialTimeoutPosAutoreport">{{ _('Position autoreport interval') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutPosAutoreport'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: serial_timeoutPosAutoreport" id="settings-serialTimeoutPosAutoreport">
                             <span class="add-on">s</span>
                         </div>
@@ -184,14 +208,22 @@
                 <div class="control-group" title="{{ _('Time after which the communication with your printer will be considered timed out if nothing was sent by your printer (and an attempt to get it talking again will be done). Increase this if your printer takes longer than this for some moves.')|edq }}">
                     <label class="control-label" for="settings-serialTimeoutCommunication">{{ _('Communication timeout') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutCommunication'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: serial_timeoutCommunication" id="settings-serialTimeoutCommunication">
                             <span class="add-on">s</span>
                         </div>
                         <span class="help-inline">{{ _('<code>busy</code> protocol support not detected')}}</span>
                     </div>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutCommunicationBusy'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: serial_timeoutCommunicationBusy" id="settings-serialTimeoutCommunicationBusy">
                             <span class="add-on">s</span>
                         </div>
@@ -201,7 +233,11 @@
                 <div class="control-group" title="{{ _('Time after which a connection attempt to the printer will be considered as having failed')|edq }}">
                     <label class="control-label" for="settings-serialTimeoutConnection">{{ _('Connection timeout') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutConnection'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: serial_timeoutConnection" id="settings-serialTimeoutConnection">
                             <span class="add-on">s</span>
                         </div>
@@ -210,14 +246,22 @@
                 <div class="control-group" title="{{ _('Time after which to consider the auto detection handshake attempt to have failed if no successful connection is detected')|edq }}">
                     <label class="control-label" for="settings-serialTimeoutDetectionFirst">{{ _('Autodetection timeout') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutDetectionFirst'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: serial_timeoutDetectionFirst" id="settings-serialTimeoutDetectionFirst">
                             <span class="add-on">s</span>
                         </div>
                         <span class="help-inline">{{ _('First handshake attempt')}}</span>
                     </div>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutDetectionConsecutive'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: serial_timeoutDetectionConsecutive" id="settings-serialTimeoutDetectionConsecutive">
                             <span class="add-on">s</span>
                         </div>
@@ -227,7 +271,11 @@
                 <div class="control-group" title="{{ _('Time after which to consider a position query on pause or cancel to have failed')|edq }}">
                     <label class="control-label" for="settings-serialTimeoutPositionLogWait">{{ _('Position query timeout') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutPositionLogWait'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="any" min="1" class="input-mini text-right" data-bind="value: serial_timeoutPositionLogWait" id="settings-serialTimeoutPositionLogWait">
                             <span class="add-on">s</span>
                         </div>
@@ -239,7 +287,11 @@
                         <div class="control-group" title="{{ _('Time to wait after opening the serial connection before starting baudrate detection')|edq }}">
                             <label class="control-label" for="settings-serialTimeoutBaudrateDetectionPause">{{ _('Initial baudrate detection pause') }}</label>
                             <div class="controls">
-                                <div class="input-append">
+                                <div class="input-prepend input-append">
+                                    <div class="btn-group">
+                                        <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                        <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialTimeoutBaudrateDetectionPause'); }">Reset to Default</a></li></ul>
+                                    </div>
                                     <input type="number" step="any" min="0" class="input-mini text-right" data-bind="value: serial_timeoutBaudrateDetectionPause" id="settings-serialTimeoutBaudrateDetectionPause">
                                     <span class="add-on">s</span>
                                 </div>
@@ -249,21 +301,39 @@
                         <div class="control-group" title="{{ _('Maximum consecutive communication timeouts while idle. More than this and the printer will be considered to be gone. Set to 0 to disable.')|edq }}">
                             <label class="control-label" for="settings-serialMaxTimeoutsIdle">{{ _('Max. consecutive timeouts while idle') }}</label>
                             <div class="controls">
-                                <input type="number" min="0" class="input-mini text-right" id="settings-serialMaxTimeoutsIdle" data-bind="value: serial_maxTimeoutsIdle">
+                                <div class="input-prepend">
+                                    <div class="btn-group">
+                                        <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                        <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialMaxTimeoutsIdle'); }">Reset to Default</a></li></ul>
+                                    </div>
+                                    <input type="number" min="0" class="input-mini text-right" id="settings-serialMaxTimeoutsIdle" data-bind="value: serial_maxTimeoutsIdle">
+                                </div>
                                 <span class="help-block">{{ _('Set to 0 to disable consecutive timeout detection and handling.') }}</span>
                             </div>
                         </div>
                         <div class="control-group" title="{{ _('Maximum consecutive communication timeouts while printing. More than this and the printer will be considered to be gone. Set to 0 to disable.')|edq }}">
                             <label class="control-label" for="settings-serialMaxTimeoutsPrinting">{{ _('Max. consecutive timeouts while printing') }}</label>
                             <div class="controls">
-                                <input type="number" min="0" class="input-mini text-right" id="settings-serialMaxTimeoutsPrinting" data-bind="value: serial_maxTimeoutsPrinting">
+                                <div class="input-prepend">
+                                    <div class="btn-group">
+                                        <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                        <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialMaxTimeoutsPrinting'); }">Reset to Default</a></li></ul>
+                                    </div>
+                                    <input type="number" min="0" class="input-mini text-right" id="settings-serialMaxTimeoutsPrinting" data-bind="value: serial_maxTimeoutsPrinting">
+                                </div>
                                 <span class="help-block">{{ _('Set to 0 to disable consecutive timeout detection and handling.') }}</span>
                             </div>
                         </div>
                         <div class="control-group" title="{{ _('Maximum consecutive communication timeouts while a long running command is active. More than this and the printer will be considered to be gone. Set to 0 to disable.')|edq }}">
                             <label class="control-label" for="settings-serialMaxTimeoutsLong">{{ _('Max. consecutive timeouts during long running commands') }}</label>
                             <div class="controls">
-                                <input type="number" min="0" class="input-mini text-right" id="settings-serialMaxTimeoutsLong" data-bind="value: serial_maxTimeoutsLong">
+                                <div class="input-prepend">
+                                    <div class="btn-group">
+                                        <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                        <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialMaxTimeoutsLong'); }">Reset to Default</a></li></ul>
+                                    </div>
+                                    <input type="number" min="0" class="input-mini text-right" id="settings-serialMaxTimeoutsLong" data-bind="value: serial_maxTimeoutsLong">
+                                </div>
                                 <span class="help-block">{{ _('Set to 0 to disable consecutive timeout detection and handling.') }}</span>
                             </div>
                         </div>
@@ -463,35 +533,65 @@
                 <div class="control-group">
                     <label class="control-label" for="settings-serialBlockedCommands">{{ _('Blocked commands') }}</label>
                     <div class="controls">
-                        <input type="text" class="input-block-level" id="settings-serialBlockedCommands" data-bind="value: serial_blockedCommands">
+                        <div class="input-prepend">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialBlockedCommands'); }">Reset to Default</a></li></ul>
+                            </div>
+                            <input type="text" class="input-block-level" id="settings-serialBlockedCommands" data-bind="value: serial_blockedCommands">
+                        </div>
                         <span class="help-inline">{{ _('Use this to specify commands that should never be sent to the printer. Just the G or M code, comma separated. Defaults to <code>M0</code> and <code>M1</code> since most firmware will block until a button on the controller has been pressed if it receives either of those two commands.') }}</span>
                     </div>
                 </div>
                 <div class="control-group">
                     <label class="control-label" for="settings-serialIgnoredCommands">{{ _('Ignored commands') }}</label>
                     <div class="controls">
-                        <input type="text" class="input-block-level" id="settings-serialIgnoredCommands" data-bind="value: serial_ignoredCommands">
+                        <div class="input-prepend">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialIgnoredCommands'); }">Reset to Default</a></li></ul>
+                            </div>
+                            <input type="text" class="input-block-level" id="settings-serialIgnoredCommands" data-bind="value: serial_ignoredCommands">
+                        </div>
                         <span class="help-inline">{{ _('Use this to specify commands that should be silently ignored and never be sent to the printer. Just the G or M code, comma separated. Unlike blocked commands above, there will be no warning popup when these commands are encountered.') }}</span>
                     </div>
                 </div>
                 <div class="control-group">
                     <label class="control-label" for="settings-serialPausingCommands">{{ _('Pausing commands') }}</label>
                     <div class="controls">
-                        <input type="text" class="input-block-level" id="settings-serialPausingCommands" data-bind="value: serial_pausingCommands">
+                        <div class="input-prepend">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialPausingCommands'); }">Reset to Default</a></li></ul>
+                            </div>
+                            <input type="text" class="input-block-level" id="settings-serialPausingCommands" data-bind="value: serial_pausingCommands">
+                        </div>
                         <span class="help-inline">{{ _('Use this to specify commands on which OctoPrint should pause the print job. Just the G or M code, comma separated. Defaults to <code>M0</code>, <code>M1</code> and <code>M25</code>.') }}</span>
                     </div>
                 </div>
                 <div class="control-group">
                     <label class="control-label" for="settings-serialSdCancelCommand">{{ _('SD Cancel Command') }}</label>
                     <div class="controls">
-                        <input type="text" class="input-block-level" id="settings-serialSdCancelCommand" data-bind="value: serial_sdCancelCommand">
+                        <div class="input-prepend">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialSdCancelCommand'); }">Reset to Default</a></li></ul>
+                            </div>
+                            <input type="text" class="input-block-level" id="settings-serialSdCancelCommand" data-bind="value: serial_sdCancelCommand">
+                        </div>
                         <span class="help-inline">{{ _('The command to send to printer when cancelling a SD card print. Defaults to <code>M25</code>.') }}</span>
                     </div>
                 </div>
                 <div class="control-group">
                     <label class="control-label" for="settings-serialEmergencyCommands">{{ _('Emergency commands') }}</label>
                     <div class="controls">
-                        <input type="text" class="input-block-level" id="settings-serialEmergencyCommands" data-bind="value: serial_emergencyCommands">
+                        <div class="input-prepend">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialEmergencyCommands'); }">Reset to Default</a></li></ul>
+                            </div>
+                            <input type="text" class="input-block-level" id="settings-serialEmergencyCommands" data-bind="value: serial_emergencyCommands">
+                        </div>
                         <span class="help-inline">{{ _('Use this to specify emergency commands which should jump any queues and - if supported by the firmware - be force sent. Just the G or M code, comma separated. Defaults to <code>M112</code>, <code>M108</code> and <code>M410</code>.') }}</span>
                     </div>
                 </div>
@@ -501,28 +601,52 @@
                         <div class="control-group" title="{{ _('Command to send to the firmware on first handshake attempt.')|edq }}">
                             <label class="control-label" for="settings-serialHelloCommand">{{ _('"Hello" command') }}</label>
                             <div class="controls">
-                                <input type="text" class="input-block-level" id="settings-serialHelloCommand" data-bind="value: serial_helloCommand">
+                                <div class="input-prepend">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialHelloCommand'); }">Reset to Default</a></li></ul>
+                            </div>
+                                    <input type="text" class="input-block-level" id="settings-serialHelloCommand" data-bind="value: serial_helloCommand">
+                                </div>
                                 <span class="help-inline">{{ _('Use this to specify a different command than the default <code>M110</code> to send to the printer on initial connection to trigger a communication handshake.') }}</span>
                             </div>
                         </div>
                         <div class="control-group" title="{{ _('Commands that are know to run long and hence should suppress communication timeouts from being triggered.')|edq }}">
                             <label class="control-label" for="settings-serialLongRunningCommands">{{ _('Long running commands') }}</label>
                             <div class="controls">
-                                <input type="text" class="input-block-level" id="settings-serialLongRunningCommands" data-bind="value: serial_longRunningCommands">
+                                <div class="input-prepend">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialLongRunningCommands'); }">Reset to Default</a></li></ul>
+                            </div>
+                                    <input type="text" class="input-block-level" id="settings-serialLongRunningCommands" data-bind="value: serial_longRunningCommands">
+                                </div>
                                 <span class="help-inline">{{ _('Use this to specify the commands known to take a long time to complete without output from your printer and hence might cause timeout issues. Just the G or M code, comma separated.') }}</span>
                             </div>
                         </div>
                         <div class="control-group" title="{{ _('Commands that always require a line number and checksum to be sent with them.')|edq }}">
                             <label class="control-label" for="settings-checksumRequiringCommands">{{ _('Commands that always require a checksum') }}</label>
                             <div class="controls">
-                                <input type="text" class="input-block-level" id="settings-checksumRequiringCommands" data-bind="value: serial_checksumRequiringCommands">
+                                <div class="input-prepend">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-checksumRequiringCommands'); }">Reset to Default</a></li></ul>
+                            </div>
+                                    <input type="text" class="input-block-level" id="settings-checksumRequiringCommands" data-bind="value: serial_checksumRequiringCommands">
+                                </div>
                                 <span class="help-inline">{{ _('Use this to specify which commands <strong>always</strong> need to be sent with a checksum. Comma separated list.') }}</span>
                             </div>
                         </div>
                         <div class="control-group" title="{{ _('ok buffer size')|edq }}">
                             <label class="control-label" for="settings-serialAckMax">{{ _('<code>ok</code> buffer size') }}</label>
                             <div class="controls">
-                                <input type="number" min="0" class="input-mini text-right" id="settings-serialAckMax" data-bind="value: serial_ackMax">
+                                <div class="input-prepend">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialAckMax'); }">Reset to Default</a></li></ul>
+                            </div>
+                                    <input type="number" min="0" class="input-mini text-right" id="settings-serialAckMax" data-bind="value: serial_ackMax">
+                                </div>
                                 <span class="help-block">{{ _('Only modify if told to do so') }}</span>
                             </div>
                         </div>
@@ -617,7 +741,11 @@
                 <div class="control-group" title="{{ _('Resend ratio threshold. Percentage of resend requests among all sent lines to consider critical.')|edq }}">
                     <label class="control-label" for="settings-serialResendRatioThreshold">{{ _('Critical resend ratio') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialResendRatioThreshold'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" min="0" max="100" step="1" class="input-mini text-right" id="settings-serialResendRatioThreshold" data-bind="value: serial_resendRatioThreshold">
                             <span class="add-on">%</span>
                         </div>
@@ -626,7 +754,11 @@
                 <div class="control-group" title="{{ _('Start tracking resend request after these many transmitted lines.')|edq }}">
                     <label class="control-label" for="settings-serialResendRatioStart">{{ _('Tracking start') }}</label>
                     <div class="controls">
-                        <div class="input-append">
+                        <div class="input-prepend input-append">
+                            <div class="btn-group">
+                                <button class="btn dropdown-toggle" data-toggle="dropdown"><span class="caret"></span></button>
+                                <ul class="dropdown-menu"><li><a tabindex="-1" data-bind="click: function(){ resetSetting('settings-serialResendRatioStart'); }">Reset to Default</a></li></ul>
+                            </div>
                             <input type="number" step="1" class="input-mini text-right" id="settings-serialResendRatioStart" data-bind="value: serial_resendRatioStart">
                             <span class="add-on">lines</span>
                         </div>
