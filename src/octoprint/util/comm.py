@@ -621,8 +621,11 @@ class MachineCom:
 
         self._firmware_detection = settings().getBoolean(["serial", "firmwareDetection"])
         self._firmware_info_received = False
+        self._firmware_capabilities_received = False
         self._firmware_info = {}
         self._firmware_capabilities = {}
+
+        self._defer_sd_refresh = settings().getBoolean(["serial", "waitToLoadSdFileList"])
 
         self._temperature_autoreporting = False
         self._sdstatus_autoreporting = False
@@ -723,6 +726,9 @@ class MachineCom:
             ),
             "capabilities": self._pluginManager.get_hooks(
                 "octoprint.comm.protocol.firmware.capabilities"
+            ),
+            "after_report": self._pluginManager.get_hooks(
+                "octoprint.comm.protocol.firmware.after_report"
             ),
         }
 
@@ -2003,6 +2009,12 @@ class MachineCom:
         if not self.isOperational() or self.isBusy():
             return
 
+        if self._defer_sd_refresh and not self._firmware_capabilities_received:
+            self._logger.debug(
+                "Deferring sd file refresh until capability report is processed"
+            )
+            return
+
         if tags is None:
             tags = set()
 
@@ -2581,6 +2593,31 @@ class MachineCom:
                 ):
                     continue
 
+                # wait for the end of the firmware capability report (M115) then notify plugins and refresh sd list if deferred
+                if (
+                    self._firmware_capabilities
+                    and not self._firmware_capabilities_received
+                    and not lower_line.startswith("cap:")
+                ):
+                    self._firmware_capabilities_received = True
+
+                    if self._defer_sd_refresh:
+                        # sd list was deferred, refresh it now
+                        self._logger.debug("Performing deferred sd file refresh")
+                        self.refreshSdFiles()
+
+                    # notify plugins
+                    for name, hook in self._firmware_info_hooks["after_report"].items():
+                        try:
+                            hook(self, copy.copy(self._firmware_capabilities))
+                        except Exception:
+                            self._logger.exception(
+                                "Error processing firmware reported hook {}:".format(
+                                    name
+                                ),
+                                extra={"plugin": name},
+                            )
+
                 ##~~ position report processing
                 if "X:" in line and "Y:" in line and "Z:" in line:
                     parsed = parse_position_line(line)
@@ -2729,6 +2766,10 @@ class MachineCom:
                             ):
                                 self._logger.info(
                                     "Firmware states that it supports emergency GCODEs to be sent without waiting for an acknowledgement first"
+                                )
+                            elif capability == self.CAPABILITY_EXTENDED_M20 and enabled:
+                                self._logger.info(
+                                    "Firmware states that it supports long filenames"
                                 )
 
                         # notify plugins
@@ -3628,11 +3669,7 @@ class MachineCom:
         )
 
         if self._sdAvailable:
-            self.refreshSdFiles(
-                tags={
-                    "trigger:comm.on_connected",
-                }
-            )
+            self.refreshSdFiles(tags={"trigger:comm.on_connected"})
         else:
             self.initSdCard(tags={"trigger:comm.on_connected"})
 
