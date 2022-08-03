@@ -14,6 +14,7 @@ class GcodeviewerPlugin(
     def get_assets(self):
         js = [
             "js/gcodeviewer.js",
+            "js/viewer/util.js",
             "js/viewer/ui.js",
             "js/viewer/reader.js",
             "js/viewer/renderer.js",

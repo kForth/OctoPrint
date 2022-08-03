@@ -89,16 +89,8 @@ GCODE.renderer = (function () {
     var scaleX = 1,
         scaleY = 1;
 
-    var speeds = [];
-    var speedsByLayer = {};
     var currentInvertX = false,
         currentInvertY = false;
-
-    var deg0 = 0.0;
-    var deg90 = Math.PI / 2.0;
-    var deg180 = Math.PI;
-    var deg270 = Math.PI * 1.5;
-    var deg360 = Math.PI * 2.0;
 
     var layerCache = [];
 
@@ -237,85 +229,27 @@ GCODE.renderer = (function () {
                 }
                 if (cmds[i].g === 2 || cmds[i].g === 3) {
                     var arc = getArcParams(cmds[i]);
+                    var cw = cmds[i].g === 2;
+                    var arcMinMax = getArcMinMax(arc, cw);
 
-                    var startAngle, endAngle;
-                    if (cmds[i].g === 2) {
-                        // cw: start = start and end = end
-                        startAngle = arc.startAngle;
-                        endAngle = arc.endAngle;
-                    } else {
-                        // ccw: start = end and end = start for clockwise
-                        startAngle = arc.endAngle;
-                        endAngle = arc.startAngle;
-                    }
+                    maxX = Math.max(maxX, arcMinMax.maxX);
+                    minX = Math.min(minX, arcMinMax.minX);
+                    maxY = Math.max(maxY, arcMinMax.maxY);
+                    minY = Math.min(minY, arcMinMax.minY);
+                }
+                if (cmds[i].g === 5) {
+                    var spline = getSplineParams(cmds[i]);
+                    var splineMinMax = getSplineMinMax(spline);
 
-                    if (startAngle < 0) startAngle += deg360;
-                    if (endAngle < 0) endAngle += deg360;
-
-                    // from now on we only think in clockwise direction
-                    var intersectsAngle = function (sA, eA, angle) {
-                        return (
-                            (sA >= angle && (eA <= angle || eA > sA)) ||
-                            (sA <= angle && eA <= angle && eA > sA)
-                        );
-                    };
-
-                    if (intersectsAngle(startAngle, endAngle, deg0)) {
-                        // arc crosses positive x
-                        maxX = Math.max(maxX, arc.x + arc.r);
-                    }
-
-                    if (intersectsAngle(startAngle, endAngle, deg90)) {
-                        // arc crosses positive y
-                        maxY = Math.max(maxY, arc.y + arc.r);
-                    }
-
-                    if (intersectsAngle(startAngle, endAngle, deg180)) {
-                        // arc crosses negative x
-                        minX = Math.min(minX, arc.x - arc.r);
-                    }
-
-                    if (intersectsAngle(startAngle, endAngle, deg270)) {
-                        // arc crosses negative y
-                        minY = Math.min(minY, arc.y - arc.r);
-                    }
+                    maxX = Math.max(maxX, splineMinMax.maxX);
+                    minX = Math.min(minX, splineMinMax.minX);
+                    maxY = Math.max(maxY, splineMinMax.maxY);
+                    minY = Math.min(minY, splineMinMax.minY);
                 }
             }
         }
 
         return {minX: minX, maxX: maxX, minY: minY, maxY: maxY};
-    }
-
-    function getArcParams(cmd) {
-        var x = cmd.x !== undefined ? cmd.x : cmd.prevX;
-        var y = cmd.y !== undefined ? cmd.y : cmd.prevY;
-
-        var centerX = cmd.prevX + cmd.i;
-        var centerY = cmd.prevY + cmd.j;
-        return {
-            x: centerX,
-            y: centerY,
-            r: Math.sqrt(cmd.i * cmd.i + cmd.j * cmd.j),
-            startAngle: Math.atan2(cmd.prevY - centerY, cmd.prevX - centerX),
-            endAngle: Math.atan2(y - centerY, x - centerX),
-            startX: cmd.prevX,
-            startY: cmd.prevY,
-            endX: x,
-            endY: y
-        };
-    }
-
-    function getSplineParams(cmd) {
-        return {
-            prevX: cmd.prevX,
-            prevY: cmd.prevY,
-            c1X: cmd.prevX + cmd.i,
-            c1Y: cmd.prevY + cmd.j,
-            c2X: cmd.x + cmd.p,
-            c2Y: cmd.y + cmd.q,
-            x: cmd.x,
-            y: cmd.y
-        };
     }
 
     function trackTransforms(ctx) {
@@ -1093,7 +1027,7 @@ GCODE.renderer = (function () {
 
                     if (cmd.g === 2 || cmd.g === 3) {
                         var arc = getArcParams(cmd);
-                        var ccw = cmd.g === 2; // Y-axis is inverted so direction is also inverted
+                        var ccw = arc.cw; // Y-axis is inverted so direction is also inverted
                         ctx.arc(arc.x, arc.y, arc.r, arc.startAngle, arc.endAngle, ccw);
                     } else if (cmd.g === 5) {
                         var spline = getSplineParams(cmd);

@@ -42,6 +42,7 @@ var percentageByLayer = [];
 var mustCompress = false;
 
 importScripts("../lib/pako.js");
+importScripts("util.js");
 
 var compress = function (data) {
     if (!mustCompress) return data;
@@ -246,6 +247,11 @@ var analyzeModel = function () {
                 boundingBox.maxZ = max.z;
             };
 
+            var arc = undefined;
+            var spline = undefined;
+            if (cmds[j].g === 2 || cmds[j].g === 3) arc = getArcParams(cmds[j]);
+            else if (cmds[j].g === 5) spline = getSplineParams(cmds[j]);
+
             if (move && extrude) {
                 recordX(cmds[j].prevX, prevInBounds);
                 recordX(cmds[j].x, inBounds);
@@ -253,6 +259,23 @@ var analyzeModel = function () {
                 recordY(cmds[j].y, inBounds);
                 recordZ(cmds[j].prevZ);
                 recordZ(cmds[j].z);
+            }
+
+            if (arc !== undefined) {
+                var arcMinMax = getArcMinMax(arc);
+
+                recordX(arcMinMax.maxX, extrude);
+                recordX(arcMinMax.minX, extrude);
+                recordY(arcMinMax.maxY, extrude);
+                recordY(arcMinMax.minY, extrude);
+            }
+            if (spline !== undefined) {
+                var splineMinMax = getSplineMinMax(spline);
+
+                recordX(splineMinMax.maxX, extrude);
+                recordX(splineMinMax.minX, extrude);
+                recordY(splineMinMax.maxY, extrude);
+                recordY(splineMinMax.minY, extrude);
             }
 
             if (!totalFilament[tool]) totalFilament[tool] = 0;
