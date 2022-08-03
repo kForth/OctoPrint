@@ -645,6 +645,115 @@ class gcode:
                 P = getCodeFloat(line, "P")
                 if P is not None:
                     totalMoveTimeMinute += P / 60 / 1000
+
+            elif gcode in ("G5", "G05"):  # Spline Move
+                e = getCodeFloat(line, "E")
+                f = getCodeFloat(line, "F")
+                i = getCodeFloat(line, "I")
+                j = getCodeFloat(line, "J")
+                p = getCodeFloat(line, "P")
+                q = getCodeFloat(line, "Q")
+                x = getCodeFloat(line, "X")
+                y = getCodeFloat(line, "Y")
+
+                # this is a move or print head stays on position
+                move = (
+                    x is not None
+                    or y is not None
+                    or i is not None
+                    or j is not None
+                    or p is not None
+                    or q is not None
+                )
+
+                oldPos = pos
+
+                # Use new coordinates if provided. If not provided, use prior coordinates (minus tool offset)
+                # in absolute and 0.0 in relative mode.
+                newPos = Vector3D(
+                    x * scale if x is not None else (0.0 if relativeMode else pos.x),
+                    y * scale if y is not None else (0.0 if relativeMode else pos.y),
+                    z * scale if z is not None else (0.0 if relativeMode else pos.z),
+                )
+
+                if relativeMode:
+                    # Relative mode: add to current position
+                    pos += newPos
+                else:
+                    # Absolute mode: apply tool offsets
+                    pos = newPos
+
+                if f is not None and f != 0:
+                    feedrate = f
+
+                # get control point offsets
+                i = 0 if i is None else i
+                j = 0 if j is None else j
+                p = 0 if p is None else p
+                q = 0 if q is None else q
+
+                # calculate control points
+                control1 = Vector3D(oldPos.x + i, oldPos.y + j, oldPos.z)
+                control2 = Vector3D(x + p, y + q, z)
+
+                spline_length = None
+
+                if e is not None:
+                    if relativeMode or relativeE:
+                        # e is already relative, nothing to do
+                        pass
+                    else:
+                        e -= currentE[currentExtruder]
+
+                    # If move with extrusion, calculate new min/max coordinates of model
+                    if e > 0 and move:
+                        # extrusion and move -> oldPos & pos relevant for print area & dimensions
+                        self._minMax.record(oldPos)
+                        self._minMax.record(pos)
+                        spline_length = self._addSplineMinMax(
+                            self._minMax, oldPos, pos, control1, control2
+                        )
+
+                    totalExtrusion[currentExtruder] += e
+                    currentE[currentExtruder] += e
+                    maxExtrusion[currentExtruder] = max(
+                        maxExtrusion[currentExtruder], totalExtrusion[currentExtruder]
+                    )
+
+                    if currentExtruder == 0 and len(currentE) > 1 and duplicationMode:
+                        # Copy first extruder length to other extruders
+                        for i in range(1, len(currentE)):
+                            totalExtrusion[i] += e
+                            currentE[i] += e
+                            maxExtrusion[i] = max(maxExtrusion[i], totalExtrusion[i])
+                else:
+                    e = 0
+
+                # move time in x, y, z, will be 0 if no movement happened
+                if spline_length is None:
+                    spline_length = self._calcSplineLength(
+                        oldPos, pos, control1, control2
+                    )
+                moveTimeXYZ = abs(spline_length / feedrate)
+
+                # time needed for extruding, will be 0 if no extrusion happened
+                extrudeTime = abs(e / feedrate)
+
+                # time to add is maximum of both
+                totalMoveTimeMinute += max(moveTimeXYZ, extrudeTime)
+
+                # process layers if there's extrusion
+                if e:
+                    self._track_layer(
+                        pos,
+                        {
+                            "firstOffsetX": i,
+                            "firstOffsetY": j,
+                            "secondOffsetX": p,
+                            "secondOffsetY": q,
+                        },
+                    )
+
             elif gcode == "G10":  # Firmware retract
                 totalMoveTimeMinute += fwretractTime
             elif gcode == "G11":  # Firmware retract recover
@@ -821,6 +930,106 @@ class gcode:
         if self._intersectsAngle(startDeg, endDeg, 270):
             # arc crosses negative y
             minmax.min.y = min(minmax.min.y, centerArc.y - radius)
+
+    def _addSplineMinMax(self, minmax, position, target, control1, control2):
+        # Function adapted from Marlin's G5 planning.
+        # https://github.com/MarlinFirmware/Marlin/blob/bugfix-2.1.x/Marlin/src/gcode/motion/G5.cpp
+
+        MAX_STEP = 0.1
+        MIN_STEP = 0.002
+        SIGMA = 0.1
+
+        t = 0
+        step = MAX_STEP
+        bez_target = Vector3D(position.x, position.y, position.z)
+        spline_length = 0
+
+        def dist(x1, y1, x2, y2):
+            return abs(x1 - x2) + abs(y1 - y2)
+
+        def interp(a, b, t):
+            return (1.0 - t) * a + t * b
+
+        def eval_bezier(a, b, c, d, t):
+            iab = interp(a, b, t)
+            ibc = interp(b, c, t)
+            icd = interp(c, d, t)
+            iabc = interp(iab, ibc, t)
+            ibcd = interp(ibc, icd, t)
+            return interp(iabc, ibcd, t)
+
+        while t < 1.0:
+            # First try to reduce the step in order to make it sufficiently
+            # close to a linear interpolation.
+            did_reduce = False
+            new_t = min(t + step, 1.0)
+
+            new_pos_x = eval_bezier(position.x, control1.x, control2.x, target.x, new_t)
+            new_pos_y = eval_bezier(position.y, control1.y, control2.y, target.y, new_t)
+
+            while new_t - t >= MIN_STEP:
+                candidate_t = 0.5 * (t + new_t)
+                candidate_x = eval_bezier(
+                    position.x, control1.x, control2.x, target.x, candidate_t
+                )
+                candidate_y = eval_bezier(
+                    position.y, control1.y, control2.y, target.y, candidate_t
+                )
+                interp_pos0 = 0.5 * (bez_target.x + new_pos_x)
+                interp_pos1 = 0.5 * (bez_target.y + new_pos_y)
+                if dist(candidate_x, candidate_y, interp_pos0, interp_pos1) <= SIGMA:
+                    break
+                new_t = candidate_t
+                new_pos_x = candidate_x
+                new_pos_y = candidate_y
+                did_reduce = True
+
+            # If we did not reduce the step, maybe we should enlarge it.
+            if not did_reduce:
+                while new_t - t <= MAX_STEP:
+                    candidate_t = t + 2.0 * (new_t - t)
+                    if candidate_t >= 1.0:
+                        break
+                    candidate_x = eval_bezier(
+                        position.x, control1.x, control2.x, target.x, candidate_t
+                    )
+                    candidate_y = eval_bezier(
+                        position.y, control1.y, control2.y, target.y, candidate_t
+                    )
+                    interp_pos0 = 0.5 * (bez_target.x + candidate_x)
+                    interp_pos1 = 0.5 * (bez_target.y + candidate_y)
+                    if dist(new_pos_x, new_pos_y, interp_pos0, interp_pos1) > SIGMA:
+                        break
+                    new_t = candidate_t
+                    new_pos_x = candidate_x
+                    new_pos_y = candidate_y
+
+            step = new_t - t
+            t = new_t
+
+            # Compute cumulative path length
+            spline_length += dist(bez_target.x, bez_target.y, new_pos_x, new_pos_y)
+
+            # Compute new position
+            bez_target.x = new_pos_x
+            bez_target.y = new_pos_y
+            bez_target.z = interp(position.z, target.z, t)
+            # FIXME: The above is wrong since the parameter t is not linear with the distance.
+
+            # Update min/max
+            minmax.record(bez_target)
+
+        return spline_length
+
+    def _calcSplineLength(self, position, target, control1, control2):
+        # Approximate spline length as linear distance between control points
+
+        def dist(pt1, pt2):
+            return abs(pt1.x - pt2.x) + abs(pt1.y - pt2.y)
+
+        return (
+            dist(position, control1) + dist(control1, control2) + dist(control2, target)
+        )
 
     def get_result(self):
         result = {
