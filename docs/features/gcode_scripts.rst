@@ -163,6 +163,7 @@ Out of the box, OctoPrint defaults to the following script setup for ``afterPrin
    ;disable all heaters
    {% snippet 'disable_hotends' %}
    {% snippet 'disable_bed' %}
+   {% snippet 'disable_chamber' %}
 
    ;disable fan
    M106 S0
@@ -189,10 +190,19 @@ The ``disable_bed`` snippet is defined as follows:
    M140 S0
    {% endif %}
 
-As you can see, the ``disable_hotends`` and ``disable_bed`` snippets utilize the
-``printer_profile`` context variable in order to iterate through all available
-extruders and set their temperature to 0, and to also set the bed temperature
-to 0 if a heated bed is configured.
+The ``disable_chamber`` snippet is defined as follows:
+
+.. code-block:: jinja
+   :caption: Default ``disable_chamber`` snippet
+
+   {% if printer_profile.heatedChamber %}
+   M141 S0
+   {% endif %}
+
+As you can see, the ``disable_hotends``, ``disable_bed``, and ``disable_chamber``
+snippets utilize the ``printer_profile`` context variable in order to iterate
+through all available extruders and set their temperature to 0, and to set the
+bed and chamber temperatures to 0 if configured.
 
 .. _sec-features-gcode_scripts-examples:
 
