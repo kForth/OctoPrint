@@ -697,11 +697,6 @@ $(function () {
         e.stopPropagation();
     });
 
-    // prevent default action for drag-n-drop
-    $(document).bind("drop dragover", function (e) {
-        e.preventDefault();
-    });
-
     // reload overlay
     $("#reloadui_overlay_reload").click(function () {
         location.reload();
