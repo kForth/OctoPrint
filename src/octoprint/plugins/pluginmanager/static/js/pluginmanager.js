@@ -356,6 +356,17 @@ $(function () {
             );
         };
 
+        self.enableQueueInstall = ko.pureComputed(function () {
+            return (
+                self.enableManagement() &&
+                self.pipAvailable() &&
+                !self.safeMode() &&
+                !self.throttled() &&
+                !self.working() &&
+                self.queuedPlugins().length > 0
+            );
+        });
+
         self.enableRepoInstall = function (data) {
             return (
                 self.enableManagement() &&
@@ -365,6 +376,10 @@ $(function () {
                 self.online() &&
                 self.isCompatible(data)
             );
+        };
+
+        self.enableRepoQueue = function (data) {
+            return self.pipAvailable() && !self.safeMode() && self.isCompatible(data);
         };
 
         self.throttled = ko.pureComputed(function () {
@@ -427,6 +442,18 @@ $(function () {
                 url !== undefined &&
                 url.trim() !== "" &&
                 !self.invalidUrl()
+            );
+        });
+
+        self.enableUrlQueue = ko.pureComputed(function () {
+            var url = self.installUrl();
+            return (
+                self.pipAvailable() &&
+                !self.safeMode() &&
+                url !== undefined &&
+                url.trim() !== "" &&
+                !self.invalidUrl() &&
+                !self.pluginQueued({url: url})
             );
         });
 
@@ -1062,6 +1089,208 @@ $(function () {
             );
         };
 
+        self.queuedPlugins = ko.observableArray([]);
+        self._queueInstalling = ko.observable(false);
+        self._queueCancelled = ko.observable(false);
+
+        self.clearQueuedPlugins = function () {
+            self.queuedPlugins([]);
+        };
+
+        self.queueFromUrl = function (url, name, followDependencyLinks) {
+            if (!url) url = self.installUrl();
+            self.queuePlugin({
+                url: url,
+                name: name || _.sprintf(gettext("From URL: %(url)s"), {url: url}),
+                followDependencyLinks: followDependencyLinks
+            });
+            self.installUrl("");
+        };
+
+        self.queueFromRepo = function (data) {
+            if (self.pluginQueued(data)) {
+                self.dequeuePlugin(data);
+            } else {
+                self.queuePlugin({
+                    url: data.archive,
+                    name: data.title,
+                    followDependencyLinks: data.follow_dependency_links,
+                    id: data.id
+                });
+            }
+        };
+
+        self.queuePlugin = function (plugin) {
+            var error;
+            if (!plugin) {
+                error = gettext("Invalid plugin information.");
+            } else if (!plugin.url) {
+                error = gettext("Invalid plugin url.");
+            } else if (self.pluginQueued(plugin)) {
+                error = gettext("Plugin already queued.");
+            }
+
+            if (error) {
+                new PNotify({
+                    title: gettext("Unable to queue plugin"),
+                    text: error,
+                    type: "error",
+                    hide: false
+                });
+                return;
+            } else {
+                self.queuedPlugins.push(plugin);
+                // TODO: Show 'plugin queued' notification or something?
+            }
+        };
+
+        self.dequeuePlugin = function (plugin) {
+            self.queuedPlugins(
+                _.filter(self.queuedPlugins(), function (e) {
+                    return (plugin.url || plugin.archive) !== e.url;
+                })
+            );
+        };
+
+        self.pluginQueued = function (data) {
+            var filtered = _.filter(self.queuedPlugins(), function (e) {
+                return (data.url || data.archive) === e.url;
+            });
+            return filtered.length > 0;
+        };
+
+        self.installFromQueue = function (plugin) {
+            if (!self.pluginQueued(plugin) || !self.enableQueueInstall()) {
+                return;
+            }
+
+            self.dequeuePlugin(plugin);
+            self.installPlugin(
+                plugin.url,
+                plugin.name,
+                plugin.id && self.installed(plugin) ? plugin.id : undefined,
+                !!plugin.followDependencyLinks || self.followDependencyLinks()
+            );
+        };
+
+        self.installQueuedPlugins = function () {
+            if (
+                !self.loginState.hasPermission(
+                    self.access.permissions.PLUGIN_PLUGINMANAGER_INSTALL
+                ) ||
+                !self.enableQueueInstall()
+            ) {
+                return;
+            }
+
+            if (self.queuedPlugins().length == 1) {
+                var plugin = self.queuedPlugins()[0];
+                self.installFromQueue(plugin);
+            } else {
+                var workTitle = _.sprintf(gettext("Installing %(count)d plugins..."), {
+                    count: self.queuedPlugins().length
+                });
+                var workText = _.sprintf(
+                    gettext("Installing %(count)d plugins from queue..."),
+                    {
+                        count: self.queuedPlugins().length
+                    }
+                );
+
+                self._markWorking(workTitle, workText);
+
+                self._queueInstalling(true);
+                self._queueCancelled(false);
+                self._installNextInQueue();
+            }
+        };
+
+        self.cancelInstallQueue = function () {
+            self._queueCancelled(true);
+
+            self.workingTitle((workTitle = gettext("Cancelling queue...")));
+
+            var workText = gettext("Cancelling remaining plugin queue...");
+            self.loglines.push({line: workText, stream: "message"});
+        };
+
+        self._installNextInQueue = function () {
+            if (self._queueCancelled() || !self.queuedPlugins().length) {
+                var workText = self._queueCancelled()
+                    ? gettext("Cancelled!")
+                    : gettext("Done!");
+                self.working(false);
+                self.loglines.push({line: workText, stream: "message"});
+                self._scrollWorkingOutputToEnd();
+                self._queueInstalling(false);
+                self._queueCancelled(false);
+            } else {
+                var plugin = self.queuedPlugins()[0];
+                var action = plugin.reinstall
+                    ? gettext("Reinstalling")
+                    : gettext("Installing");
+                var name = _.escape(plugin.name) || gettext("plugin");
+                var workText = _.sprintf(
+                    gettext('%(action)s "%(name)s" from %(url)s...'),
+                    {action: action, name: name, url: _.escape(plugin.url)}
+                );
+
+                self.working(true);
+                self.loglines.push({line: workText, stream: "message"});
+                self._scrollWorkingOutputToEnd();
+
+                var onSuccess = function (response) {
+                        var message = _.sprintf(gettext("%(action)s %(name)s"), {
+                            action: action,
+                            name: name
+                        });
+                        self.loglines.push({line: message, stream: "message"});
+                    },
+                    onError = function (jqXHR) {
+                        var error;
+                        if (jqXHR.status === 409) {
+                            // there's already a plugin being installed
+                            error = gettext(
+                                "There's already another plugin install in progress."
+                            );
+                        } else {
+                            error =
+                                "Could not install plugin, unknown error, please consult octoprint.log for details";
+                            new PNotify({
+                                title: gettext("Something went wrong"),
+                                text: gettext("Please consult octoprint.log for details"),
+                                type: "error",
+                                hide: false
+                            });
+                        }
+
+                        self.loglines.push({line: gettext("Error!"), stream: "error"});
+                        self.loglines.push({line: error, stream: "error"});
+                    },
+                    always = function () {
+                        self.dequeuePlugin(plugin);
+                    };
+
+                if (plugin.reinstall) {
+                    OctoPrint.plugins.pluginmanager
+                        .reinstall(
+                            plugin.reinstall,
+                            plugin.url,
+                            plugin.followDependencyLinks
+                        )
+                        .done(onSuccess)
+                        .fail(onError)
+                        .always(always);
+                } else {
+                    OctoPrint.plugins.pluginmanager
+                        .install(plugin.url, plugin.followDependencyLinks)
+                        .done(onSuccess)
+                        .fail(onError)
+                        .always(always);
+                }
+            }
+        };
+
         self.installPlugin = function (url, name, reinstall, followDependencyLinks) {
             if (
                 !self.loginState.hasPermission(
@@ -1434,16 +1663,37 @@ $(function () {
                 ? self.installed(data)
                     ? gettext("Reinstall")
                     : gettext("Install")
-                : data.disabled
-                ? gettext("Disabled")
-                : gettext("Incompatible");
+                : self.enableRepoInstall(data)
+                ? data.disabled
+                    ? gettext("Disabled")
+                    : gettext("Incompatible")
+                : gettext("Busy");
+        };
+
+        self.queueButtonIcon = function (data) {
+            return self.pluginQueued(data) ? "far fa-minus-square" : "fas fa-plus-square";
+        };
+
+        self.queueButtonText = function (data) {
+            return self.pluginQueued(data)
+                ? gettext("Remove from Queue")
+                : gettext("Add to Queue");
         };
 
         self._processPluginManagementResult = function (response, action, plugin) {
-            if (response.result) {
-                self._markDone();
+            if (!self._queueInstalling()) {
+                if (response.result) {
+                    self._markDone();
+                } else {
+                    self._markDone(response.reason, response.faq);
+                }
             } else {
-                self._markDone(response.reason, response.faq);
+                if (response.result) {
+                    self._installNextInQueue();
+                } else {
+                    // TODO: Option to try again, skip, or stop
+                    self._installNextInQueue();
+                }
             }
 
             self._displayPluginManagementNotification(response, action, plugin);

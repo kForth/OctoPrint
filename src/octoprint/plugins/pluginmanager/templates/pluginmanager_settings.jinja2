@@ -213,6 +213,7 @@
         <pre id="settings_plugin_pluginmanager_workingdialog_output" class="pre-scrollable pre-output" style="height: 170px" data-bind="foreach: loglines"><span data-bind="text: line, css: {stdout: stream == 'stdout', stderr: stream == 'stderr', call: stream == 'call', message: stream == 'message', error: stream == 'error'}"></span></pre>
     </div>
     <div class="modal-footer">
+        <button class="btn btn-danger" data-bind="enable: (queuedPlugins().length && !_queueCancelled()), visible: _queueInstalling(), click: cancelInstallQueue" aria-hidden="true">{{ _('Cancel') }}</button>
         <button class="btn" data-dismiss="modal" data-bind="enable: !$root.working()" aria-hidden="true">{{ _('Close') }}</button>
     </div>
 </div>
@@ -238,6 +239,30 @@
                     <input type="text" class="input-block search-query pull-left" data-bind="value: repositorySearchQuery, valueUpdate: 'input'" placeholder="{{ _('Search...')|edq }}" spellcheck="false">
                 </form>
                 <div class="dropdown pull-right">
+                    <div class="btn-group">
+                        <button class="btn btn-small btn-primary dropdown-toggle" data-toggle="dropdown" data-bind="enable: enableQueueInstall, css: {disabled: !enableQueueInstall() }">
+                            <i class="fas fa-list"></i>&nbsp;{{ _('Queue') }}</i>&nbsp;<span class="caret"></span>
+                            <span data-bind="visible: queuedPlugins().length > 0">&nbsp;<span class="badge badge-inverse" data-bind="text: queuedPlugins().length"></span></span>
+                        </button>
+                        <ul class="dropdown-menu pull-right">
+                            <li><a href="javascript:void(0)" data-bind="click: installQueuedPlugins"><i class="fas fa-download"></i>&nbsp;{{ _("Install All From Queue") }}</a></li>
+                            <li class="divider"></li>
+                            <li>
+                                <ul class="queue-list" data-bind="foreach: queuedPlugins">
+                                    <li>
+                                        <span class="btn-group">
+                                            <button class="btn btn-mini" title="{{ _('Install') }}" data-bind="click: function () { $root.installFromQueue($data); }"><i class="fas fa-download"></i></button>
+                                            <button class="btn btn-mini" title="{{ _('Remove from Queue') }}" data-bind="click: function () { $root.dequeuePlugin($data); }"><i class="fas fa-trash"></i></button>
+                                        </span>
+                                        <span data-bind="text: $data.name, attr: {title: $data.name}"></span>
+                                    </li>
+                                </ul>
+                            </li>
+                            <li class="divider"></li>
+                            <li><a href="javascript:void(0)" data-bind="click: clearQueuedPlugins"><i class="fas fa-trash"></i>&nbsp;{{ _("Clear Queue") }}</a></li>
+                        </ul>
+                    </div>
+
                     <div class="btn-group">
                         <button class="btn btn-small dropdown-toggle" data-toggle="dropdown" href="javascript:void(0)">
                             <i class="fas fa-wrench"></i> <span class="caret"></span>
@@ -266,7 +291,12 @@
                         <div class="row-fluid">
                             <div class="span12">
                                 <div class="span3 pull-right">
-                                    <button class="btn btn-primary btn-block" data-bind="enable: $root.enableRepoInstall($data), css: {disabled: !$root.enableRepoInstall($data)}, click: function() { if ($root.enableRepoInstall($data)) { $root.installFromRepository($data); } else { return false; } }"><span data-bind="text: $root.installButtonText($data)"></span></button>
+                                    <div class="btn-group span12">
+                                        <button class="btn btn-primary btn-block span8" data-bind="enable: $root.enableRepoInstall($data), css: {disabled: !$root.enableRepoInstall($data)}, click: function() { if ($root.enableRepoInstall($data)) { $root.installFromRepository($data); } else { return false; } }"><span data-bind="text: $root.installButtonText($data)"></span></button>
+                                        <button class="btn btn-primary span4" data-bind="enable: $root.enableRepoQueue($data), css: {disabled: !$root.enableRepoQueue($data) }, click: function() { if ($root.enableRepoQueue($data)) { $root.queueFromRepo($data); } else { return false; } }">
+                                            <i data-bind="class: $root.queueButtonIcon($data), attr: { title: $root.queueButtonText($data) }"></i>
+                                        </button>
+                                    </div>
                                     <div data-bind="visible: $data.disabled !== undefined" style="text-align: center"><small><a data-bind="attr: {href: page}" target="_blank">{{ _('"Why?"') }}</a></small></div>
                                 </div>
                                 <div>
@@ -321,7 +351,10 @@
                     <div class="span9">
                         <input type="text" class="input-block-level" data-bind="value: installUrl, valueUpdate: 'input'" placeholder="{{ _('Enter URL...')|edq }}" >
                     </div>
-                    <button class="btn btn-primary span3" data-bind="enable: enableUrlInstall, css: {disabled: !enableUrlInstall()}, click: function() { if (enableUrlInstall()) { $root.installPlugin(); } }">{{ _('Install') }}</button>
+                    <div class="btn-group span3">
+                        <button class="btn btn-primary span8" data-bind="enable: enableUrlInstall, css: {disabled: !enableUrlInstall()}, click: function() { if (enableUrlInstall()) { $root.installPlugin(); } }">{{ _('Install') }}</button>
+                        <button class="btn btn-primary span4" data-bind="enable: enableUrlQueue, css: {disabled: !enableUrlQueue()}, click: function() { if (enableUrlQueue()) { $root.queueFromUrl(); } }" title="{{ _('Add to Queue') }}"><i class="fas fa-plus-square"></i></button>
+                    </div>
                 </div>
                 <span class="help-block" data-bind="visible: invalidUrl">{{ _('This does not look like a valid URL. Expected http, https or any of the <a href="%(url)s" target="_blank">supported VCS URLs</a>.', url='https://pip.pypa.io/en/stable/reference/pip_install/#vcs-support') }}</span>
             </form>

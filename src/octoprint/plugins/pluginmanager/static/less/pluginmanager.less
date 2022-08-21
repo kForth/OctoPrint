@@ -121,6 +121,26 @@
     }
   }
 
+  .queue-list {
+    margin-left: 0;
+    list-style: none;
+    max-height: 150px;
+    max-width: 325px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    word-wrap: break-word;
+
+    li {
+      max-width: calc(100% - 30px);
+      padding: 3px 20px 3px 10px;
+      clear: both;
+
+      overflow: hidden;
+      text-overflow: ellipsis;
+      // white-space: nowrap;
+    }
+  }
+
   #settings_plugin_pluginmanager_repositorydialog_unavailable,
   #settings_plugin_pluginmanager_repositorydialog_empty {
     overflow: hidden;
