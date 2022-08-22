@@ -1,6 +1,7 @@
 <h3>Virtual Printer</h3>
 
 <form class="form-horizontal" onsubmit="return false;">
+
     <div class="control-group">
         <div class="controls">
             <label class="checkbox">
@@ -9,4 +10,467 @@
             </label>
         </div>
     </div>
+
+    <legend>Printer</legend>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Extruder Count') }}</label>
+        <div class="controls">
+            <input type="number" min="1" step="1" data-bind="value: settings.plugins.virtual_printer.numExtruders">
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.sharedNozzle"> {{ _('Shared Nozzle') }}
+            </label>
+        </div>
+
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.hasBed"> {{ _('Heated Bed') }}
+            </label>
+        </div>
+
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.hasChamber"> {{ _('Heated Chamber') }}
+            </label>
+        </div>
+
+    </div>
+
+    {# TODO: Figure out an input for this. #}
+    {# <div class="control-group">
+        <label class="control-label">{{ _('Pinned Extruder Temps') }}</label>
+        <div data-bind="foreach: settings.plugins.virtual_printer.pinnedExtruders">
+            <div class="controls">
+                <input data-bind="value: $data" readonly>
+                <input type="text" data-bind="value: $parent.settings.plugins.virtual_printer.pinnedExtruders()[$data]">
+                <a title="Remove Line" class="btn btn-danger" data-bind="click: function(){ delete $parent.settings.plugins.virtual_printer.pinnedExtruders()[$data]; }"><i class="far fa-trash-alt"></i></a>
+            </div>
+        </div>
+        <div class="controls">
+            <select data-bind="
+                value: selectedExtruderForPinning,
+                options: _.range(settings.plugins.virtual_printer.numExtruders())
+            "></select>
+            <a title="Add Line" class="btn btn-primary" data-bind="
+                click: function(){
+                    console.log(settings.plugins.virtual_printer.pinnedExtruders());
+                    console.log(selectedExtruderForPinning());
+                    if(!settings.plugins.virtual_printer.pinnedExtruders()) {
+                        settings.plugins.virtual_printer.pinnedExtruders({});
+                    }
+                    settings.plugins.virtual_printer.pinnedExtruders()[selectedExtruderForPinning()] = 20;
+                    console.log(settings.plugins.virtual_printer.pinnedExtruders());
+                }
+            "><i class="fas fa-plus"></i></a>
+            <span class="help-block">{{ _('Allows pinning certain hotends to a fixed temperature') }}</span>
+        </div>
+    </div> #}
+
+    <legend>Command Responses</legend>
+
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.includeCurrentToolInTemps"> {{ _('Include the current tool temperature in the M105 output as T segment') }}
+                <span class="help-block">
+                    <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                    <p class="hide">{% trans %}
+                        Enabled: <br>
+                        &emsp;> M105 <br>
+                        &emsp;< ok T:23.5/0.0 T0:34.3/0.0 T1:23.5/0.0 B:43.2/0.0 <br>
+                        Disabled: <br>
+                        &emsp;> M105 <br>
+                        &emsp;< ok T0:34.3/0.0 T1:23.5/0.0 B:43.2/0.0
+                    {% endtrans %}</p>
+                </span>
+            </label>
+        </div>
+
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.includeFilenameInOpened"> {{ _('Include the selected filename in the M23 File opened response') }}
+                <span class="help-block">
+                    <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                    <p class="hide">{% trans %}
+                        Enabled: <br>
+                        &emsp;> M23 filename.gcode <br>
+                        &emsp;< File opened: filename.gcode  Size: 27 <br>
+                        Disabled: <br>
+                        &emsp;> M23 filename.gcode <br>
+                        &emsp;< File opened
+                    {% endtrans %}</p>
+                </span>
+            </label>
+        </div>
+
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.repetierStyleTargetTemperature"> {{ _('Report target temperatures as separate messages from the firmware, like Repetier') }}
+                <span class="help-block">
+                    <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                    <p class="hide">{% trans %}
+                        Enabled:<br>
+                        &emsp;> M109 S220.0 <br>
+                        &emsp;< TargetExtr0:220.0 <br>
+                        &emsp;< ok <br>
+                        &emsp;> M105 <br>
+                        &emsp;< ok T0:34.3 T1:23.5 B:43.2 <br>
+                        Disabled:<br>
+                        &emsp;> M109 S220.0 <br>
+                        &emsp;< ok <br>
+                        &emsp;> M105 <br>
+                        &emsp;< ok T0:34.3/220.0 T1:23.5/0.0 B:43.2/0.0
+                    {% endtrans %}</p>
+                </span>
+            </label>
+        </div>
+
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.repetierStyleResends"> {{ _('Send multiple resends for the same line to make sure nothing gets lost on the line, like Repetier') }}
+            </label>
+        </div>
+
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.okBeforeCommandOutput"> {{ _('Send \'ok\' before a commands output, otherwise after or inline (M105)') }}
+                <span class="help-block">
+                    <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                    <p class="hide">{% trans %}
+                        Enabled:<br>
+                        &emsp;> M20 <br>
+                        &emsp;< ok <br>
+                        &emsp;< Begin file list <br>
+                        &emsp;< End file list <br>
+                        Disabled:<br>
+                        &emsp;> M20 <br>
+                        &emsp;< Begin file list <br>
+                        &emsp;< End file list <br>
+                        &emsp;< ok
+                    {% endtrans %}</p>
+                </span>
+            </label>
+        </div>
+
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.smoothieTemperatureReporting"> {{ _('Report the first extruder in M105 responses as T instead of T0, like Smoothie') }}
+                <span class="help-block">
+                    <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                    <p class="hide">{% trans %}
+                        Enabled:<br>
+                        &emsp;> M105 <br>
+                        &emsp;< ok T:34.3/0.0 T1:23.5/0.0 B:43.2/0.0 <br>
+                        Disabled:<br>
+                        &emsp;> M105 <br>
+                        &emsp;< ok T0:34.3/0.0 T1:23.5/0.0 B:43.2/0.0
+                    {% endtrans %}</p>
+                </span>
+            </label>
+        </div>
+    </div>
+
+    <legend>SD File List</legend>
+
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.sdFiles.size"> {{ _('Include filesize in M20 response') }}
+                <span class="help-block">
+                    <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                    <p class="hide">{% trans %}
+                        Enabled:&emsp; [filename] [filesize in bytes] <br>
+                        Disabled:&emsp; [filename]
+                    {% endtrans %}</p>
+                </span>
+            </label>
+        </div>
+
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.sdFiles.longname"> {{ _('Include long filename in M20 response') }}
+                <span class="help-block">
+                    <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                    <p class="hide">{% trans %}
+                        * Requires filesize to be included also <br>
+                        Enabled:&emsp; [filename] [filesize in bytes] [longname] <br>
+                        Disabled:&emsp; [filename] [filesize in bytes]
+                    {% endtrans %}</p>
+                </span>
+            </label>
+        </div>
+    </div>
+
+
+    <legend>Serial Communication</legend>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Firmware Name') }}</label>
+        <div class="controls">
+            <input type="text" data-bind="value: settings.plugins.virtual_printer.firmwareName">
+            <span class="help-block">{{ _('Firmware name to report (useful for testing firmware detection)') }}</span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.sendWait"> {{ _('Send "wait" responses when serial rx buffer is empty') }}
+            </label>
+        </div>
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.sendBusy"> {{ _('Send "busy" messages if busy processing something') }}
+            </label>
+        </div>
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.okWithLinenumber"> {{ _('Send "ok" responses with the line number that gets acknowledged by the "ok"') }}
+            </label>
+        </div>
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.okAfterResend"> {{ _('Send an additional "ok" after a resend request (like Repetier)') }}
+            </label>
+        </div>
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.forceChecksum"> {{ _('Force checksums and line number in the communication (like Repetier)') }}
+                <span class="help-block">{{ _("If enabled, printer will only accept commands that come with linenumber and checksum and throw an error for lines that don't.") }}</span>
+            </label>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Buffer Throttle') }}</label>
+        <div class="controls">
+            <input type="number" min="0" step="0.01" data-bind="value: settings.plugins.virtual_printer.throttle">
+            <span class="help-block">{{ _('Forced pause for retrieving from the outgoing buffer, in seconds') }}</span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Wait Interval') }}</label>
+        <div class="controls">
+            <input type="number" min="0" step="1" data-bind="value: settings.plugins.virtual_printer.waitInterval">
+            <span class="help-block">{{ _('Interval in which to send "wait" lines when rx buffer is empty, in seconds') }}</span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Rx Buffer Size') }}</label>
+        <div class="controls">
+            <input type="number" min="1" step="1" data-bind="value: settings.plugins.virtual_printer.rxBuffer">
+            <span class="help-block">{{ _("Size of the simulated RX buffer in bytes, when it's full a send from OctoPrint's side will block") }}</span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Command Buffer Size') }}</label>
+        <div class="controls">
+            <input type="number" min="1" step="1" data-bind="value: settings.plugins.virtual_printer.commandBuffer">
+            <span class="help-block">{{ _("Size of simulated command buffer, number of commands. If full, buffered commands will block until a slot frees up") }}</span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.supportM112"> {{ _('Support M112 command with simulated kill') }}
+            </label>
+        </div>
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.echoOnM117"> {{ _('Send messages received via M117 back as "echo:" lines') }}
+            </label>
+        </div>
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.brokenM29"> {{ _('Simulate broken M29 behaviour (missing ok after response)') }}
+            </label>
+        </div>
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.supportF"> {{ _('Support F as an individual command') }}
+            </label>
+        </div>
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.simulateReset"> {{ _('Simulate a reset on connect') }}
+            </label>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Reset Lines') }}</label>
+        <div data-bind="foreach: _.range(settings.plugins.virtual_printer.resetLines().length)">
+            <div class="controls">
+                <input type="text" data-bind="value: $parent.settings.plugins.virtual_printer.resetLines()[$data]">
+                <a title="Remove Line" class="btn btn-danger" data-bind="click: function(){ $parent.settings.plugins.virtual_printer.resetLines.pop($data); }"><i class="far fa-trash-alt"></i></a>
+            </div>
+        </div>
+        <div class="controls">
+            <a title="Add Line" class="btn btn-primary" data-bind="click: function(){ settings.plugins.virtual_printer.resetLines.push(''); }"><i class="fas fa-plus"></i></a>
+            <span class="help-block">
+                Lines to send after a simulated reset
+                <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                <p class="hide">{% trans %}
+                    Default: <br>
+                    &emsp;start <br>
+                    &emsp;Marlin: Virtual Marlin! <br>
+                    &emsp; ; \x80 <br>
+                    &emsp;SD card ok
+                {% endtrans %}</p>
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Prepared OKs') }}</label>
+        <div data-bind="foreach: _.range(settings.plugins.virtual_printer.preparedOks().length)">
+            <div class="controls">
+                <input type="text" data-bind="value: $parent.settings.plugins.virtual_printer.preparedOks()[$data]">
+                <a title="Remove Line" class="btn btn-danger" data-bind="click: function(){ $parent.settings.plugins.virtual_printer.preparedOks.pop($data); }"><i class="far fa-trash-alt"></i></a>
+            </div>
+        </div>
+        <div class="controls">
+            <a title="Add Line" class="btn btn-primary" data-bind="click: function(){ settings.plugins.virtual_printer.preparedOks.push(''); }"><i class="fas fa-plus"></i></a>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('OK Response Format') }}</label>
+        <div class="controls">
+            <input type="text" data-bind="value: settings.plugins.virtual_printer.okFormatString">
+            <span class="help-block">
+                <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                <p class="hide">{% trans %}
+                    Placeholders: <br>
+                    &emsp;- lastN: last acknowledged line number <br>
+                    &emsp;- buffer: empty slots in internal command buffer <br>
+                    <br>
+                    Example format string for "extended" ok format: <br>
+                    &emsp;ok N{lastN} P{buffer}
+                {% endtrans %}</p>
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('M115 Response Format') }}</label>
+        <div class="controls">
+            <input type="text" data-bind="value: settings.plugins.virtual_printer.m115FormatString">
+            <span class="help-block">
+                <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                <p class="hide">{% trans %}
+                    Placeholders: <br>
+                    &emsp;- firmare_name: The firmware name as defined in firmwareName <br>
+                    <br>
+                    Example format string for "extended" ok format: <br>
+                    &emsp;FIRMWARE_NAME: {firmware_name} PROTOCOL_VERSION:1.0
+                {% endtrans %}</p>
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('M105 Response Format (Target)') }}</label>
+        <div class="controls">
+            <input type="text" data-bind="value: settings.plugins.virtual_printer.m105TargetFormatString">
+            <span class="help-block">
+                <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                <p class="hide">{% trans %}
+                    Response to M105 when there is a target. <br>
+                    Placeholders: <br>
+                    &emsp;- heater: The heater id (eg. T0, T1, B) <br>
+                    &emsp;- actual: The actual temperature of the heater <br>
+                    &emsp;- target: The target temperature of heater <br>
+                    <br>
+                    Example format string for "extended" ok format: <br>
+                    &emsp;{heater}:{actual:.2f}/ {target:.2f}
+                {% endtrans %}</p>
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('M105 Response Format (No Target)') }}</label>
+        <div class="controls">
+            <input type="text" data-bind="value: settings.plugins.virtual_printer.m105NoTargetFormatString">
+            <span class="help-block">
+                <div><small><a href="#" class="muted" data-bind="toggleContent: { class: 'fa-caret-right fa-caret-down', parent: '.help-block', container: '.hide' }"><i class="fas fa-caret-right"></i> {{ _('More Information') }}</a></small></div>
+                <p class="hide">{% trans %}
+                    Response to M105 when there is a target. <br>
+                    Placeholders: <br>
+                    &emsp;- heater: The heater id (eg. T0, T1, B) <br>
+                    &emsp;- actual: The actual temperature of the heater <br>
+                    <br>
+                    Example format string for "extended" ok format: <br>
+                    &emsp;{heater}:{actual:.2f}
+                {% endtrans %}</p>
+            </span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.m115ReportCapabilites"> {{ _('Include capability report in `M115` output') }}
+            </label>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.support_m503"> {{ _('Support `M503`') }}
+            </label>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <div class="controls">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: settings.plugins.virtual_printer.enable_eeprom"> {{ _('Enable EEPROM') }}
+                <span class="help-block">
+                {%- trans %}
+                    If enabled, a file `eeprom.json` will be created in the plugin data folder
+                    to enable settings persistence across connections. Enables M500/1/2/4 commands
+                    and a selection of other settings commands. Responses modeled on Marlin 2.0
+                {% endtrans -%}
+                </span>
+            </label>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Capabilities') }}</label>
+        <div class="controls" data-bind="foreach: _.keys(settings.plugins.virtual_printer.capabilities)">
+            <label class="checkbox">
+                <input type="checkbox" data-bind="checked: $parent.settings.plugins.virtual_printer.capabilities[$data]"><span data-bind="text: $data"></span>
+            </label>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Ambient Temperature') }}</label>
+        <div class="controls">
+            <input type="number" step="0.1" data-bind="value: settings.plugins.virtual_printer.ambientTemperature">
+            <span class="help-block">{{ _("Simulated ambient temperature in °C") }}</span>
+        </div>
+    </div>
+
+    <div class="control-group">
+        <label class="control-label">{{ _('Resend Ratio') }}</label>
+        <div class="controls">
+            <input type="number" min="0" step="1" data-bind="value: settings.plugins.virtual_printer.resend_ratio">
+            <span class="help-block">{{ _("Resend ratio to simulate noise on the line") }}</span>
+        </div>
+    </div>
+
 </form>
