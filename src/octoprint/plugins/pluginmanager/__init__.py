@@ -770,6 +770,7 @@ class PluginManagerPlugin(
             try:
                 source = path
                 source_type = "path"
+                action = "install" if not reinstall else "reinstall"
 
                 if url is not None:
                     # fetch URL
@@ -805,7 +806,7 @@ class PluginManagerPlugin(
                     "source_type": source_type,
                     "reason": f"Could not fetch plugin from server, got {e}",
                 }
-                self._send_result_notification("install", result)
+                self._send_result_notification(action, result)
 
             except exceptions.InvalidPackageFormat:
                 self._logger.error(
@@ -820,7 +821,7 @@ class PluginManagerPlugin(
                     "reason": "Could not install plugin from {}, was neither "
                     "a plugin archive nor a single file plugin".format(source),
                 }
-                self._send_result_notification("install", result)
+                self._send_result_notification(action, result)
 
             except Exception:
                 error_msg = (
@@ -835,7 +836,7 @@ class PluginManagerPlugin(
                     "source_type": source_type,
                     "reason": error_msg,
                 }
-                self._send_result_notification("install", result)
+                self._send_result_notification(action, result)
 
             finally:
                 if folder is not None:
@@ -854,6 +855,7 @@ class PluginManagerPlugin(
         reinstall=None,
         dependency_links=False,
     ):
+        action = "install" if not reinstall else "reinstall"
         throttled = self._get_throttled()
         if (
             throttled
@@ -873,7 +875,7 @@ class PluginManagerPlugin(
                 "source_type": source_type,
                 "reason": error_msg,
             }
-            self._send_result_notification("install", result)
+            self._send_result_notification(action, result)
             return result
 
         from urllib.parse import quote as url_quote
@@ -927,7 +929,7 @@ class PluginManagerPlugin(
                     source
                 ),
             }
-            self._send_result_notification("install", result)
+            self._send_result_notification(action, result)
             return result
 
         if is_python_mismatch(stderr):
@@ -950,7 +952,7 @@ class PluginManagerPlugin(
                         source
                     ),
                 }
-                self._send_result_notification("install", result)
+                self._send_result_notification(action, result)
                 return result
 
             if is_python_mismatch(stderr):
@@ -969,7 +971,7 @@ class PluginManagerPlugin(
                 "reason": "Could not parse output from pip, see plugin_pluginmanager_console.log "
                 "for generated output",
             }
-            self._send_result_notification("install", result)
+            self._send_result_notification(action, result)
             return result
 
         # We'll need to fetch the "Successfully installed" line, strip the "Successfully" part, then split
@@ -996,7 +998,7 @@ class PluginManagerPlugin(
                 "source_type": source_type,
                 "reason": "Pip did not report successful installation",
             }
-            self._send_result_notification("install", result)
+            self._send_result_notification(action, result)
             return result
 
         installed = list(
@@ -1023,7 +1025,7 @@ class PluginManagerPlugin(
                 "was_reinstalled": False,
                 "plugin": "unknown",
             }
-            self._send_result_notification("install", result)
+            self._send_result_notification(action, result)
             return result
 
         self._plugin_manager.reload_plugins()
@@ -1079,7 +1081,7 @@ class PluginManagerPlugin(
             or reinstall is not None,
             "plugin": self._to_external_plugin(new_plugin),
         }
-        self._send_result_notification("install", result)
+        self._send_result_notification(action, result)
         return result
 
     def _handle_python_mismatch(self, source, source_type):
@@ -1211,6 +1213,8 @@ class PluginManagerPlugin(
             },
         )
 
+        was_reinstalled = new_plugin.key in all_plugins_before
+        action = "install" if not was_reinstalled else "reinstall"
         result = {
             "result": True,
             "source": source,
@@ -1218,10 +1222,10 @@ class PluginManagerPlugin(
             "needs_restart": needs_restart,
             "needs_refresh": needs_refresh,
             "needs_reconnect": needs_reconnect,
-            "was_reinstalled": new_plugin.key in all_plugins_before,
+            "was_reinstalled": was_reinstalled,
             "plugin": self._to_external_plugin(new_plugin),
         }
-        self._send_result_notification("install", result)
+        self._send_result_notification(action, result)
         return result
 
     def command_uninstall(self, plugin, cleanup=False):

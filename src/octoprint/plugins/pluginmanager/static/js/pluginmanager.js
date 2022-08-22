@@ -1488,6 +1488,10 @@ $(function () {
                         line = gettext("Install <em>%(plugin)s</em>: %(result)s");
                         break;
                     }
+                    case "reinstall": {
+                        line = gettext("Reinstall <em>%(plugin)s</em>: %(result)s");
+                        break;
+                    }
                     case "uninstall": {
                         line = gettext("Uninstall <em>%(plugin)s</em>: %(result)s");
                         break;
