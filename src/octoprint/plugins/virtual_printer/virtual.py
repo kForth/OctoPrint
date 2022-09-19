@@ -670,6 +670,9 @@ class VirtualPrinter:
             if file is not None:
                 self._send(file["name"])
 
+    def _gcode_M81(self, data: str) -> None:
+        self.close()
+
     def _gcode_M113(self, data: str) -> None:
         matchS = re.search(r"S([0-9]+)", data)
         if matchS is not None:
