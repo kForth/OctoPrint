@@ -43,6 +43,7 @@ from octoprint.util.pip import (
     is_python_mismatch,
 )
 from octoprint.util.platform import get_os, is_os_compatible
+from octoprint.util.vcs import clone_repo
 from octoprint.util.version import (
     get_octoprint_version,
     get_octoprint_version_string,
@@ -755,6 +756,34 @@ class PluginManagerPlugin(
 
         return False
 
+    def _is_pythonpackage(self, path):
+        if os.path.isdir(path):
+            init_file = os.path.join(path, "setup.py")
+            if os.path.isfile(init_file):
+                import ast
+
+                try:
+                    with open(init_file, "rb") as f:
+                        ast.parse(f.read(), filename=path)
+                    return True
+                except Exception as exc:
+                    self._logger.exception(
+                        f"Could not parse {path} as python package: {exc}"
+                    )
+
+        return False
+
+    def _find_pythonpackage(self, path):
+        if os.path.isdir(path):
+            init_file = os.path.join(path, "setup.py")
+            if os.path.isfile(init_file):
+                with open(init_file) as setup:
+                    for line in setup.readlines():
+                        if line.startswith("plugin_package"):
+                            return line.split("=")[-1].strip().strip("'\"")
+        self._logger.exception(f"Could not find python package for {path}")
+        return False
+
     def command_install(
         self,
         url=None,
@@ -772,14 +801,30 @@ class PluginManagerPlugin(
                 source_type = "path"
 
                 if url is not None:
-                    # fetch URL
                     folder = tempfile.TemporaryDirectory()
-                    path = download_file(url, folder.name)
                     source = url
                     source_type = "url"
 
+                    if url.lower().endswith(".git"):
+                        # clone Repo
+                        path = clone_repo(
+                            repo_url=url,
+                            clone_to_dir=folder,
+                            # checkout=checkout,
+                        )
+                    else:
+                        # fetch URL
+                        path = download_file(url, folder.name)
+
                 # determine type of path
-                if self._is_archive(path):
+                if self._is_pythonpackage(path):
+                    package = self._find_pythonpackage(path)
+                    path = os.path.join(path, package)
+                    result = self._command_install_pythonfile(
+                        path, source=source, source_type=source_type, name=name
+                    )
+
+                elif self._is_archive(path):
                     result = self._command_install_archive(
                         path,
                         source=source,
@@ -1103,7 +1148,7 @@ class PluginManagerPlugin(
         if name is None:
             name = os.path.basename(path)
 
-        self._logger.info(f"Installing single file plugin {name} from {source}")
+        self._logger.info(f"Installing python plugin {name} from {source}")
 
         all_plugins_before = self._plugin_manager.find_plugins(existing={})
 
@@ -1123,7 +1168,7 @@ class PluginManagerPlugin(
             metadata = octoprint.plugin.core.parse_plugin_metadata(path)
         except SyntaxError:
             self._logger.exception(
-                "Installing plugin from {} failed, there's a Python version mismatch".format(
+                "Installing plugin from {} failed, unable to parse plugin metadata".format(
                     source
                 )
             )
@@ -1148,7 +1193,10 @@ class PluginManagerPlugin(
         # copy plugin
         try:
             self._log_call(f"cp {path} {destination}")
-            shutil.copy(path, destination)
+            if os.path.isdir(path):
+                shutil.copytree(path, destination)
+            else:
+                shutil.copy(path, destination)
         except Exception:
             self._logger.exception(f"Installing plugin from {source} failed")
             result = {
