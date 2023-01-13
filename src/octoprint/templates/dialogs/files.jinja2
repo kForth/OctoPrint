@@ -64,6 +64,16 @@
                 </div>
             </div>
         </form>
+        <table class="table table-condensed">
+            <thead>
+                <tr><th></th><th>{{ _('Existing File') }}</th><th>{{ _('New File') }}</th></tr>
+            </thead>
+            <tbody>
+                <tr id="upload_exists_dialog_fileSize"><th>{{ _('Size:') }}</th><td></td><td></td></tr>
+                <tr id="upload_exists_dialog_dateModified"><th>{{ _('Date Modified:') }}</th><td></td><td></td></tr>
+                <tr id="upload_exists_dialog_dateUploaded"><th>{{ _('Date Uploaded:') }}</th><td></td><td> - </td></tr>
+            </tbody>
+        </table>
         <span hidden>
             {{ _('There is not enough free disk space to keep the existing file and upload this one.') }}
         </span>

@@ -1667,9 +1667,8 @@ $(function () {
 
             // Collect an item from the queue that needs an overwrite dialog
             const {data, response, path, fileSizeTooBig} =
-                self._uploadExistsQueue.shift();
-            const file = data.files[0];
-
+                self._uploadExistsQueue.shift(); // TODO: existing} =
+            const existing = {};
             const formData = {};
             if (path !== "") {
                 formData.path = path;
@@ -1688,6 +1687,23 @@ $(function () {
             $("input", self.uploadExistsDialog)
                 .val("")
                 .prop("placeholder", response.suggestion);
+            $(
+                "#upload_exists_dialog_fileSize td:nth-of-type(1)",
+                self.uploadExistsDialog
+            ).text(formatSize(existing.size));
+            $(
+                "#upload_exists_dialog_fileSize td:nth-of-type(2)",
+                self.uploadExistsDialog
+            ).text(formatSize(file.size));
+            $(
+                "#upload_exists_dialog_dateModified td:nth-of-type(1)",
+                self.uploadExistsDialog
+            ).text(formatDate(existing.lastModified));
+            $(
+                "#upload_exists_dialog_dateModified td:nth-of-type(2)",
+                self.uploadExistsDialog
+            ).text(formatDate(file.lastModified));
+            // $("#upload_exists_dialog_dateUploaded td:nth-of-type(1)", self.uploadExistsDialog).text(formatDate(existing.uploaded));
             $("a.upload-rename", self.uploadExistsDialog)
                 .toggle(!fileSizeTooBig)
                 .prop("disabled", false)
@@ -1745,12 +1761,14 @@ $(function () {
                 OctoPrint.files
                     .exists("local", path, file.name)
                     .done(function (response) {
+                        console.log(response);
                         if (response.exists) {
                             const queueEntry = {
                                 data,
                                 response,
                                 path,
                                 fileSizeTooBig
+                                // TODO: Add info about existing file
                             };
                             self._uploadExistsQueue.push(queueEntry);
                             // Start processing queue - if already processing, this will do nothing
