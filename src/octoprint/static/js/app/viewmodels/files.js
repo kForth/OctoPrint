@@ -1923,6 +1923,14 @@ $(function () {
         };
 
         self._handleDragEnter = function (e) {
+            if (
+                e.originalEvent.dataTransfer &&
+                e.originalEvent.dataTransfer.types &&
+                e.originalEvent.dataTransfer.types.indexOf("Files") < 0
+            ) {
+                return;
+            }
+
             self.dropOverlay.addClass("in");
 
             var foundLocal = false;
